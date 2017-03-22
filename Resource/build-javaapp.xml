@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE project [<!ENTITY buildfile SYSTEM "file:./build-user.xml">]>
+<project basedir="." default="deploy" name="demo">
+	<property name="groovy" value="groovy"/>
+	<property name="python" value="python"/>
+    <!-- jdk6 <property name="mvn" value="mvn1.6.0_64"/> -->
+	<!-- jdk7 <property name="mvn" value="mvn1.7.0_64"/> -->
+	<property name="mvn" value="mvn"/>
+	<property name="src.dir" value="src/main/java"/>
+	<property name="resources.dir" value="src/main/resources"/>
+	<property name="dist.dir" value="target"/>
+	<property name="compress.dir" value="compressed"/>
+	<property name="baseline.dir" value="${basedir}"/>
+	<property name="artifact.dir" value="${baseline.dir}/compressed"/>
+	<property name="conf.dir" value="${baseline.dir}/conf"/>
+	
+	<available property="folderexist" file="${conf.dir}" type="dir"/>
+	
+	<target name="clean">
+		<delete dir="${dist.dir}"/>
+		<delete dir="${compress.dir}"/>
+	</target>
+	
+	<target name="parentInstall">
+        <exec dir=".." executable="${mvn}" failonerror="true">
+            <arg line="-T 1.5C clean install -Dmaven.test.skip=true"/>
+        </exec>
+    </target>
+
+	<target name="copyapplib">
+        <exec executable="${mvn}" failonerror="true">
+			<arg value="dependency:copy-dependencies"/>
+        </exec>
+    </target>
+
+	<target name="package" depends="clean,parentInstall,copyapplib">
+        <exec dir="${baseline.dir}" executable="${mvn}" failonerror="true">
+            <arg line="-T 1.5C package -Dmaven.test.skip=true"/>
+        </exec>
+    </target>
+	
+	<target name="compress-app">
+		<mkdir dir="${compress.dir}"/>
+                <copy todir="${compress.dir}/lib" preservelastmodified="true">
+                    <fileset dir="${dist.dir}/dependency"/>
+                    <fileset dir="${dist.dir}" includes="*.jar"/>
+                </copy>
+		<copy todir="${compress.dir}/conf" preservelastmodified="true">
+                    <fileset dir="${resources.dir}"/>
+		</copy>
+		<antcall target="cp-special"/>
+		<antcall target="cp"/>
+	</target>
+
+	<target name="cp">
+		<copy todir="${compress.dir}/conf" overwrite="true">
+            <fileset dir="${compress.dir}/conf/conf/test"/>
+        </copy>
+	</target>
+	
+	<target name="cp-special" if="folderexist">
+		<copy todir="${compress.dir}/conf" overwrite="true">
+			<fileset dir="${conf.dir}"/>
+		</copy>
+	</target>
+	
+	<target name="deploy">
+		<echo message="begin auto deploy......"/>
+		<antcall target="package"/>
+		<antcall target="compress-app"/>
+		<delete dir="${dist.dir}"/>
+	</target>
+</project>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE project [<!ENTITY buildfile SYSTEM "file:./build-user.xml">]>
+<project basedir="." default="deploy" name="demo">
+	<property name="groovy" value="groovy"/>
+	<property name="python" value="python"/>
+	<!-- jdk6 <property name="mvn" value="mvn1.6.0_64"/> -->
+	<!-- jdk7 <property name="mvn" value="mvn1.7.0_64"/> -->
+	<property name="mvn" value="mvn" />
+	<property name="node" value="node" />
+	<property name="web.dir" value="src/main/webapp" />
+	<property name="dist.dir" value="target" />
+	<property name="compress.dir" value="compressed" />
+	<property name="weblib.dir" value="${web.dir}/WEB-INF/lib" />
+	<property name="webinf.dir" value="${web.dir}/WEB-INF/" />
+	<property name="classes.dir" value="${webinf.dir}/classes" />
+	<property name="baseline.dir" value="${basedir}" />
+	<property name="artifact.dir" value="${baseline.dir}/compressed" />
+	<property name="nej-build" value="nej-build"/>
+	
+	<target name="clean">
+		<delete dir="${webinf.dir}/classes"/>
+		<delete dir="${dist.dir}"/>
+		<delete dir="${compress.dir}"/>
+		<delete dir="${weblib.dir}" includes="*.jar"/>
+	</target>
+
+	<target name="cleanTarget">
+		<delete dir="${webinf.dir}/classes"/>
+		<delete dir="${dist.dir}"/>
+ 		<delete dir="${weblib.dir}" includes="*.jar"/>
+	</target>
+	
+	<target name="copylibwebapp">
+        <exec executable="${mvn}" failonerror="true">
+        	<arg value="-T 1.5C"/>
+            <arg value="war:inplace"/>
+        </exec>
+    </target>
+	
+	<target name="compile" depends="clean,parentInstall,copylibwebapp">
+		<exec dir="${baseline.dir}" executable="${mvn}" failonerror="true">
+			<arg line="compile"/>
+		</exec>
+	</target>
+
+	<target name="parentInstall">
+        <exec dir=".." executable="${mvn}" failonerror="true">
+            <arg line="-T 1.5C clean install -Dmaven.test.skip=true"/>
+        </exec>
+    </target>
+		
+	<target name="compress-web">
+		<mkdir dir="${compress.dir}"/>
+                <copy todir="${compress.dir}" preservelastmodified="true">
+                        <fileset dir="${web.dir}"/>
+                </copy>
+		<copy todir="${compress.dir}/WEB-INF/classes" preservelastmodified="true">
+			<fileset dir="${dist.dir}/classes"/>			
+		</copy>
+		<antcall target="cp"/>
+	</target>
+	
+	<target name="nej_publish">
+        <exec dir="." executable="nej-build" failonerror="true">
+			<arg line="${release.conf}"/>
+        </exec>
+    </target>
+
+	<target name="cp">
+		<copy todir="${compress.dir}/WEB-INF/classes" overwrite="true">
+            <fileset dir="${compress.dir}/WEB-INF/classes/conf/online"/>
+        </copy>
+	</target>
+	
+	<target name="deploy">
+		<echo message="begin auto deploy......"/>
+		<antcall target="compile"/>
+		<antcall target="compress-web"/>
+		<antcall target="cleanTarget"/>
+	</target>
+</project>
