@@ -7,7 +7,7 @@ import sys
 
 import SourceCodeDownloader
 
-SRC_ROOT_PATH = os.environ['HOME'] + os.path.sep + "Deployed"
+DPLOY_ROOT_PATH = os.environ['HOME'] + os.path.sep + "Deployed"
 
 ROOT_POM_FILE = "Resource/pom.xml"
 JAVAAPP_ANT_CONFIG_FILE = "Resource/build-javaapp.xml"
@@ -24,7 +24,6 @@ def constructProject(targetAppDir):
     build_command = "ant deploy"
     SourceCodeDownloader.executeCmd(build_command)
     os.chdir(cwd)
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
@@ -62,7 +61,7 @@ if __name__ == "__main__":
     if repo_path == "" or (appType != "java" and appType != "web"):
         printUsageAndExit()
 
-    targetDir = SourceCodeDownloader.downloadSourceCode(SRC_ROOT_PATH, repo_path, branch, version)
+    targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repo_path, branch, version)
     shutil.copy(ROOT_POM_FILE, targetDir)
 
     targetAppDir = targetDir + os.path.sep + subdir;
@@ -73,7 +72,19 @@ if __name__ == "__main__":
     if appType == "java":
         shutil.copy(JAVAAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
     elif appType == "web":
-        shutil.copy(JAVAAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
+        shutil.copy(WEBAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
 
     constructProject(targetAppDir)
+
+    targetAppExecuteDir = ""
+    if appType == "java":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+    elif appType == "web":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
+
+    if os.path.isdir(targetAppExecuteDir):
+        shutil.rmtree(targetAppExecuteDir)
+
+    shutil.copytree(targetAppDir + os.path.sep + "compressed", targetAppExecuteDir)
+
     # print "targetDir = " + targetDir
