@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 
+import json
 import os
 
 import Deployer
@@ -13,27 +14,23 @@ def deploy(request):
     version = request.GET.get('version')
     conf = request.GET.get('conf')
 
-    print(repoPath)
-    print(branch)
-    print(subdir)
-    print(appType)
-    print(str(version))
-    print(str(conf))
     if not version:
         version = ""
 
     print(os.getcwd())
 
-    Deployer.deployAndRun(repoPath, branch, subdir, version, appType, conf)
-    return HttpResponse("Success")
+    result = Deployer.deployAndRun(repoPath, branch, subdir, version, appType, conf)
+    json_str = json.dumps(result)
+    return HttpResponse(json_str)
 
 
 def stop(request):
     print("stop")
     subdir = request.GET.get('subdir')
     appType = request.GET.get('appType')
-    Deployer.stopService(subdir, appType)
-    return HttpResponse("Success")
+    result = Deployer.stopService(subdir, appType)
+    json_str = json.dumps(result)
+    return HttpResponse(json_str)
 
 
 def restart(request):

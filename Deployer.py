@@ -59,7 +59,7 @@ def copyWebConf(targetAppExecuteDir, conf):
     copyFiles(srcConfDir, dstConfDir)
 
 
-def deployTomcat(targetAppExecuteDir, appname, ):
+def deployTomcat(targetAppExecuteDir, appname):
     global TOMCAT_PACKAGE_PATH
 
     tomcat_pkg_path = TOMCAT_PACKAGE_PATH
@@ -129,12 +129,38 @@ def runTomcatApp(target_tomcat_path):
     print("After runTomcatApp")
 
 
+def getTargetTomcatPath(appname):
+    global TOMCAT_PACKAGE_PATH
+    global DPLOY_ROOT_PATH
+
+    tomcat_pkg_path = TOMCAT_PACKAGE_PATH
+    filename = os.path.basename(tomcat_pkg_path)
+    target_tomcat_dir_name = os.path.splitext(filename)[0]
+
+    target_tomcat_path = DPLOY_ROOT_PATH + os.path.sep + target_tomcat_dir_name + "-" + appname
+
+    return target_tomcat_path
+
+
 def deployAndRun(repoPath, branch, subdir, version, appType, conf):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType)
 
     if repoPath == "" or (appType != "java" and appType != "web"):
         printUsageAndExit()
+
+    result = {}
+
+    if appType == "java":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+    elif appType == "web":
+        target_tomcat_path = getTargetTomcatPath(subdir)
+
+        pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
+        if os.path.isfile(pid_file_path):
+            result["code"] = 500
+            result["msg"] = "The application is already running. Please stop it first."
+            return result
 
     print(os.getcwd())
 
@@ -185,42 +211,34 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf):
 
         runTomcatApp(target_tomcat_path)
 
+    result["code"] = 200
+    result["msg"] = "Successfully"
+
 
 def stopService(subdir, appType):
+    result = {}
+    result["code"] = 200
+    result["msg"] = "Successfully"
+
     if appType == "java":
         targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
     elif appType == "web":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
-        tomcat_pkg_path = TOMCAT_PACKAGE_PATH
-        filename = os.path.basename(tomcat_pkg_path)
-        target_tomcat_dir_name = os.path.splitext(filename)[0]
+        target_tomcat_path = getTargetTomcatPath(subdir)
 
-        parentDir = os.path.dirname(targetAppExecuteDir)
-        target_tomcat_path = parentDir + os.path.sep + target_tomcat_dir_name + "-" + subdir
-
-        daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
-
-        print(daemon_script_path)
-        os.system(daemon_script_path)
+        pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
+        if os.path.isfile(pid_file_path):
+            daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
+            # print(daemon_script_path)
+            os.system(daemon_script_path)
+    return result
 
 
 def restartService(subdir, appType):
     if appType == "java":
         targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
     elif appType == "web":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
-        tomcat_pkg_path = TOMCAT_PACKAGE_PATH
-        filename = os.path.basename(tomcat_pkg_path)
-        target_tomcat_dir_name = os.path.splitext(filename)[0]
-
-        parentDir = os.path.dirname(targetAppExecuteDir)
-        target_tomcat_path = parentDir + os.path.sep + target_tomcat_dir_name + "-" + subdir
-
-        daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
-
-        print(daemon_script_path)
-        os.system(daemon_script_path)
-
+        stopService(subdir, appType)
+        target_tomcat_path = getTargetTomcatPath(subdir)
         runTomcatApp(target_tomcat_path)
 
 
