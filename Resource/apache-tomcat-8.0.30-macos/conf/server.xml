@@ -66,10 +66,10 @@
          APR (HTTP/AJP) Connector: /docs/apr.html
          Define a non-SSL/TLS HTTP/1.1 Connector on port 8080
     -->
-    <Connector port="8080" protocol="HTTP/1.1"
+    <Connector port="{ConnectorPortPlaceHolder}" protocol="HTTP/1.1"
                connectionTimeout="20000"
                URIEncoding="UTF-8"
-               redirectPort="8443"
+               redirectPort="{RedirectPortPlaceHolder}"
                maxThreads="200" />
     <!-- A "Connector" using the shared thread pool-->
     <!--
@@ -135,7 +135,7 @@
                prefix="localhost_access_log." suffix=".txt"
                pattern="%h %l %u %t &quot;%r&quot; %s %b %T" /-->
 
-        <Context path="" docBase="/Users/netease/Deployed/webroot-napm-collector" reloadable="false" sessionCookieName="NTESnapm-collectorSI">
+        <Context path="" docBase="{DocBasePlaceHolder}" reloadable="false" sessionCookieName="{SessionCookieNamePlaceHolder}">
             <Valve className="org.jboss.web.rewrite.RewriteValve" asyncSupported="true"/>
         </Context>
       </Host>
