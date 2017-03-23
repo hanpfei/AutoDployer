@@ -8,9 +8,12 @@ GIT_PATH = "/usr/bin/git"
 
 def executeCmd(cmd):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    result = ""
     for line in p.stdout.readlines():
         print("  " + str(line))
-    return
+        if result == "":
+            result = str(line.decode())
+    return result
 
 def getCurrentBranch():
     branch_cmd = GIT_PATH + " branch"

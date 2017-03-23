@@ -17,9 +17,11 @@ def deploy(request):
     if not version:
         version = ""
 
+    serverName = request.GET.get('serverName')
+
     print(os.getcwd())
 
-    result = Deployer.deployAndRun(repoPath, branch, subdir, version, appType, conf)
+    result = Deployer.deployAndRun(repoPath, branch, subdir, version, appType, conf, serverName)
     json_str = json.dumps(result)
     return HttpResponse(json_str)
 

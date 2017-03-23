@@ -124,8 +124,12 @@ def runTomcatApp(target_tomcat_path):
     os.environ["JAVA_HOME"] = JAVA8_PATH
     daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh run &"
 
+    cwd = os.getcwd()
+    os.chdir(target_tomcat_path)
     # print(daemon_script_path)
     os.system(daemon_script_path)
+    os.chdir(cwd)
+    
     print("After runTomcatApp")
 
 
@@ -142,7 +146,7 @@ def getTargetTomcatPath(appname):
     return target_tomcat_path
 
 
-def deployAndRun(repoPath, branch, subdir, version, appType, conf):
+def deployAndRun(repoPath, branch, subdir, version, appType, conf, serverName):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType)
 
@@ -153,6 +157,12 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf):
 
     if appType == "java":
         targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+
+        if os.path.isfile(pid_file_path):
+            result["code"] = 500
+            result["msg"] = "The application is already running. Please stop it first."
+            return result
     elif appType == "web":
         target_tomcat_path = getTargetTomcatPath(subdir)
 
@@ -162,7 +172,7 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf):
             result["msg"] = "The application is already running. Please stop it first."
             return result
 
-    print(os.getcwd())
+    # print(os.getcwd())
 
     targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
     shutil.copy(ROOT_POM_FILE, targetDir)
@@ -196,11 +206,36 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf):
         copyJavaConf(targetAppExecuteDir, conf)
         shutil.copy(JAVAAPP_SCRIPT_FILE, targetAppExecuteDir)
 
+        global JAVA8_PATH
+        cmd = JAVA8_PATH + os.path.sep + "bin/java" + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
+        "-verbose:gc -XX:+PrintGCDetails -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false " \
+        "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.netease.appname=napm_" + subdir + \
+        " -classpath "
+
         targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
         libs = ""
         for dirItem in os.listdir(targetLibDir):
             path = os.path.join(targetLibDir, dirItem)
             libs = libs + path + ":"
+
+        cmd = cmd + libs + " " + serverName + " &"
+        # print(cmd)
+
+        cwd = os.getcwd()
+        os.chdir(targetAppExecuteDir)
+        os.system(cmd)
+        os.chdir(cwd)
+
+        get_pic_cmd = "ps -ef | grep " + serverName + " | grep -v grep | awk '{print $2}'"
+        pid = SourceCodeDownloader.executeCmd(get_pic_cmd)
+
+        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+        fileHandle = open(pid_file_path, "w")
+        pid = pid.strip()
+        fileHandle.write(pid)
+        fileHandle.close()
+
+        result["pid"] = pid
 
     elif appType == "web":
         copyWebConf(targetAppExecuteDir, conf)
@@ -213,6 +248,7 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf):
 
     result["code"] = 200
     result["msg"] = "Successfully"
+    return result
 
 
 def stopService(subdir, appType):
@@ -222,6 +258,16 @@ def stopService(subdir, appType):
 
     if appType == "java":
         targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+        file = open(pid_file_path)
+        pid = file.readline()
+
+        kill_command = "kill -9 " + pid
+        os.system(kill_command)
+
+        result["pid"] = pid
+
+        os.remove(pid_file_path)
     elif appType == "web":
         target_tomcat_path = getTargetTomcatPath(subdir)
 
@@ -235,6 +281,7 @@ def stopService(subdir, appType):
 
 def restartService(subdir, appType):
     if appType == "java":
+        stopService(subdir, appType)
         targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
     elif appType == "web":
         stopService(subdir, appType)
@@ -266,7 +313,6 @@ if __name__ == "__main__":
                 subdir = arg
             elif opt == "-v":
                 version = arg
-
             else:
                 print("%s  ==> %s" % (opt, arg));
     except getopt.GetoptError:
