@@ -10,19 +10,19 @@ import SourceCodeDownloader
 
 DPLOY_ROOT_PATH = os.environ['HOME'] + os.path.sep + "Deployed"
 
-ROOT_POM_FILE = "Resource/pom.xml"
-JAVAAPP_ANT_CONFIG_FILE = "Resource/build-javaapp.xml"
-WEBAPP_ANT_CONFIG_FILE = "Resource/build-webapp.xml"
+ROOT_POM_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/pom.xml"
+JAVAAPP_ANT_CONFIG_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/build-javaapp.xml"
+WEBAPP_ANT_CONFIG_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/build-webapp.xml"
 
-TOMCAT_PACKAGE_PATH = "Resource/apache-tomcat-8.0.30-macos.tgz"
+TOMCAT_PACKAGE_PATH = "/Users/netease/Projects/MyProject/AutoDployer/Resource/apache-tomcat-8.0.30-macos.tgz"
 
-JAVAAPP_SCRIPT_FILE = "Resource/javaApp"
+JAVAAPP_SCRIPT_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/javaApp"
 
 JAVA8_PATH = "/Library/Java/JavaVirtualMachines/jdk1.8.0_121.jdk/Contents/Home/jre"
 
 def printUsageAndExit():
-    print "Usage:"
-    print sys.argv[0] + " -g [git_repo] [-b branch] [-s subdir] [-t appType] [-v version]"
+    print("Usage:")
+    print(sys.argv[0] + " -g [git_repo] [-b branch] [-s subdir] [-t appType] [-v version]")
     exit(1)
 
 
@@ -38,8 +38,8 @@ def copyFiles(srcDir, dstDir):
     for dirItem in os.listdir(srcDir):
         srcPath = os.path.join(srcDir, dirItem)
         dstPath = os.path.join(dstDir, dirItem)
-        print srcPath
-        print dstPath
+        # print(srcPath)
+        # print(dstPath)
 
         if os.path.isfile(dstPath):
             os.remove(dstPath)
@@ -124,25 +124,27 @@ def runTomcatApp(target_tomcat_path):
     os.environ["JAVA_HOME"] = JAVA8_PATH
     daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh run &"
 
-    print daemon_script_path
+    # print(daemon_script_path)
     os.system(daemon_script_path)
-    print "After runTomcatApp"
+    print("After runTomcatApp")
 
 
-def deployAndRun(repo_path, branch, subdir, version, appType):
-    print repo_path + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
-          + subdir + "(subdir)--:--(appType)" + appType
+def deployAndRun(repoPath, branch, subdir, version, appType):
+    print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
+          + subdir + "(subdir)--:--(appType)" + appType)
 
-    if repo_path == "" or (appType != "java" and appType != "web"):
+    if repoPath == "" or (appType != "java" and appType != "web"):
         printUsageAndExit()
 
-    targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repo_path, branch, version)
+    print(os.getcwd())
+
+    targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
     shutil.copy(ROOT_POM_FILE, targetDir)
 
     targetAppDir = targetDir + os.path.sep + subdir;
 
     targetBuildXmlPath = targetAppDir + os.path.sep + "build.xml"
-    print targetBuildXmlPath
+    # print(targetBuildXmlPath)
 
     if appType == "java":
         shutil.copy(JAVAAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
@@ -167,22 +169,21 @@ def deployAndRun(repo_path, branch, subdir, version, appType):
     if appType == "java":
         copyJavaConf(targetAppExecuteDir, "conf/test")
         shutil.copy(JAVAAPP_SCRIPT_FILE, targetAppExecuteDir)
+
+        targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
+        libs = ""
+        for dirItem in os.listdir(targetLibDir):
+            path = os.path.join(targetLibDir, dirItem)
+            libs = libs + path + ":"
+
     elif appType == "web":
         copyWebConf(targetAppExecuteDir, "conf/test")
         target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir)
-        print target_tomcat_path
+        print(target_tomcat_path)
 
         configTomcatApp(targetAppExecuteDir, target_tomcat_path)
 
         runTomcatApp(target_tomcat_path)
-
-    targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
-    # libs = ""
-    # for dirItem in os.listdir(targetLibDir):
-    #     path = os.path.join(targetLibDir, dirItem)
-    #     libs = libs + path + ":"
-    #
-    # print libs
 
 
 def stopService(subdir, appType):
@@ -199,7 +200,7 @@ def stopService(subdir, appType):
 
         daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
 
-        print daemon_script_path
+        print(daemon_script_path)
         os.system(daemon_script_path)
 
 
@@ -217,7 +218,7 @@ def restartService(subdir, appType):
 
         daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
 
-        print daemon_script_path
+        print(daemon_script_path)
         os.system(daemon_script_path)
 
         runTomcatApp(target_tomcat_path)

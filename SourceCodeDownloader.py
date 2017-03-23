@@ -9,7 +9,7 @@ GIT_PATH = "/usr/bin/git"
 def executeCmd(cmd):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     for line in p.stdout.readlines():
-        print "  " + line,
+        print("  " + str(line))
     return
 
 def getCurrentBranch():
@@ -26,7 +26,7 @@ def downloadSourceCode(target_dir, repo_path, branch, version):
     pattern = re.compile(patternStr)
     matcher = pattern.match(repo_path)
     if not matcher:
-        print "Invalid repo path: " + str(repo_path)
+        print("Invalid repo path: " + str(repo_path))
         return
     repo_name = matcher.group(1)
 
@@ -34,7 +34,7 @@ def downloadSourceCode(target_dir, repo_path, branch, version):
     if os.path.isdir(target_dir):
         shutil.rmtree(target_dir)
     clone_cmd = GIT_PATH + " clone " + repo_path + " " + target_dir
-    print str(clone_cmd)
+    print(str(clone_cmd))
     executeCmd(clone_cmd)
 
     if branch == "":
@@ -53,11 +53,11 @@ def downloadSourceCode(target_dir, repo_path, branch, version):
             checkout_cmd = GIT_PATH + " checkout " + branch
         else:
             checkout_cmd = GIT_PATH + " checkout -t origin/" + branch
-        print "\n" + str(checkout_cmd)
+        print("\n" + str(checkout_cmd))
         executeCmd(checkout_cmd)
     if version:
         checkout_cmd = GIT_PATH + " checkout " + version
-        print "\n" + str(checkout_cmd)
+        print("\n" + str(checkout_cmd))
         executeCmd(checkout_cmd)
 
     os.chdir(cwd)
