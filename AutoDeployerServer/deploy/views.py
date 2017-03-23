@@ -11,17 +11,20 @@ def deploy(request):
     subdir = request.GET.get('subdir')
     appType = request.GET.get('appType')
     version = request.GET.get('version')
+    conf = request.GET.get('conf')
+
     print(repoPath)
     print(branch)
     print(subdir)
     print(appType)
     print(str(version))
+    print(str(conf))
     if not version:
         version = ""
 
     print(os.getcwd())
 
-    Deployer.deployAndRun(repoPath, branch, subdir, version, appType)
+    Deployer.deployAndRun(repoPath, branch, subdir, version, appType, conf)
     return HttpResponse("Success")
 
 

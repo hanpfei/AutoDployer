@@ -129,7 +129,7 @@ def runTomcatApp(target_tomcat_path):
     print("After runTomcatApp")
 
 
-def deployAndRun(repoPath, branch, subdir, version, appType):
+def deployAndRun(repoPath, branch, subdir, version, appType, conf):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType)
 
@@ -167,7 +167,7 @@ def deployAndRun(repoPath, branch, subdir, version, appType):
     shutil.copytree(targetAppDir + os.path.sep + "compressed", targetAppExecuteDir)
 
     if appType == "java":
-        copyJavaConf(targetAppExecuteDir, "conf/test")
+        copyJavaConf(targetAppExecuteDir, conf)
         shutil.copy(JAVAAPP_SCRIPT_FILE, targetAppExecuteDir)
 
         targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
@@ -177,7 +177,7 @@ def deployAndRun(repoPath, branch, subdir, version, appType):
             libs = libs + path + ":"
 
     elif appType == "web":
-        copyWebConf(targetAppExecuteDir, "conf/test")
+        copyWebConf(targetAppExecuteDir, conf)
         target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir)
         print(target_tomcat_path)
 
