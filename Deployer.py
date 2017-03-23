@@ -25,12 +25,14 @@ def printUsageAndExit():
     print sys.argv[0] + " -g [git_repo] [-b branch] [-s subdir] [-t appType] [-v version]"
     exit(1)
 
+
 def constructProject(targetAppDir):
     cwd = os.getcwd()
     os.chdir(targetAppDir)
     build_command = "ant deploy"
     SourceCodeDownloader.executeCmd(build_command)
     os.chdir(cwd)
+
 
 def copyFiles(srcDir, dstDir):
     for dirItem in os.listdir(srcDir):
@@ -127,36 +129,7 @@ def runTomcatApp(target_tomcat_path):
     print "After runTomcatApp"
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        printUsageAndExit()
-
-    repo_path = ""
-    branch = "master"
-    subdir = "/"
-    version = ""
-    appType = ""
-
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "g:b:s:v:t:");
-        # check all param
-        for opt, arg in opts:
-            if opt == "-g":
-                repo_path = arg
-            elif opt == "-t":
-                appType = arg
-            elif opt == "-b":
-                branch = arg
-            elif opt == "-s":
-                subdir = arg
-            elif opt == "-v":
-                version = arg
-
-            else:
-                print("%s  ==> %s" % (opt, arg));
-    except getopt.GetoptError:
-        printUsageAndExit()
-
+def deployAndRun(repo_path, branch, subdir, version, appType):
     print repo_path + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType
 
@@ -203,7 +176,6 @@ if __name__ == "__main__":
 
         runTomcatApp(target_tomcat_path)
 
-
     targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
     # libs = ""
     # for dirItem in os.listdir(targetLibDir):
@@ -211,3 +183,75 @@ if __name__ == "__main__":
     #     libs = libs + path + ":"
     #
     # print libs
+
+
+def stopService(subdir, appType):
+    if appType == "java":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+    elif appType == "web":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
+        tomcat_pkg_path = TOMCAT_PACKAGE_PATH
+        filename = os.path.basename(tomcat_pkg_path)
+        target_tomcat_dir_name = os.path.splitext(filename)[0]
+
+        parentDir = os.path.dirname(targetAppExecuteDir)
+        target_tomcat_path = parentDir + os.path.sep + target_tomcat_dir_name + "-" + subdir
+
+        daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
+
+        print daemon_script_path
+        os.system(daemon_script_path)
+
+
+def restartService(subdir, appType):
+    if appType == "java":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+    elif appType == "web":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
+        tomcat_pkg_path = TOMCAT_PACKAGE_PATH
+        filename = os.path.basename(tomcat_pkg_path)
+        target_tomcat_dir_name = os.path.splitext(filename)[0]
+
+        parentDir = os.path.dirname(targetAppExecuteDir)
+        target_tomcat_path = parentDir + os.path.sep + target_tomcat_dir_name + "-" + subdir
+
+        daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
+
+        print daemon_script_path
+        os.system(daemon_script_path)
+
+        runTomcatApp(target_tomcat_path)
+
+
+if __name__ == "__main__":
+    if len(sys.argv) < 3:
+        printUsageAndExit()
+
+    repo_path = ""
+    branch = "master"
+    subdir = "/"
+    version = ""
+    appType = ""
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "g:b:s:v:t:");
+        # check all param
+        for opt, arg in opts:
+            if opt == "-g":
+                repo_path = arg
+            elif opt == "-t":
+                appType = arg
+            elif opt == "-b":
+                branch = arg
+            elif opt == "-s":
+                subdir = arg
+            elif opt == "-v":
+                version = arg
+
+            else:
+                print("%s  ==> %s" % (opt, arg));
+    except getopt.GetoptError:
+        printUsageAndExit()
+
+    stopService(subdir, appType)
+    # deployAndRun(repo_path, branch, subdir, version, appType)
