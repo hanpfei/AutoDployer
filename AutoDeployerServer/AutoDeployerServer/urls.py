@@ -19,6 +19,9 @@ from deploy import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^createConfig', views.createConfig),
+    url(r'^listConfig', views.list_config),
+    url(r'^deleteConfig', views.delete_config),
     url(r'^deploy/', views.deploy),
     url(r'^stop/', views.stop),
     url(r'^restart/', views.restart),

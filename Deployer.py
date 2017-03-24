@@ -20,6 +20,7 @@ JAVAAPP_SCRIPT_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/ja
 
 JAVA8_PATH = "/Library/Java/JavaVirtualMachines/jdk1.8.0_121.jdk/Contents/Home/jre"
 
+
 def printUsageAndExit():
     print("Usage:")
     print(sys.argv[0] + " -g [git_repo] [-b branch] [-s subdir] [-t appType] [-v version]")
@@ -100,6 +101,7 @@ def configTomcatApp(targetAppExecuteDir, target_tomcat_path):
     fileHandle = open(serverXmlPath, "r")
     serverXmlPathTmp = target_tomcat_path + os.path.sep + "conf/server.xml_tmp"
     targetConfigFile = open(serverXmlPathTmp, "w")
+
     while 1:
         line = fileHandle.readline()
 
@@ -129,7 +131,7 @@ def runTomcatApp(target_tomcat_path):
     # print(daemon_script_path)
     os.system(daemon_script_path)
     os.chdir(cwd)
-    
+
     print("After runTomcatApp")
 
 

@@ -1,2 +1,4 @@
 .idea/
 *.pyc
+AutoDeployerServer/deploy/migrations/
+
