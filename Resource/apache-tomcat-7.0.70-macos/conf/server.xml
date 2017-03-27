@@ -127,17 +127,18 @@
 
         <!-- SingleSignOn valve, share authentication between web applications
              Documentation at: /docs/config/valve.html -->
-        <!--
         <Valve className="org.apache.catalina.authenticator.SingleSignOn" />
-        -->
 
         <!-- Access log processes all example.
              Documentation at: /docs/config/valve.html
              Note: The pattern used is equivalent to using pattern="common" -->
-        <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+        <!--Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
                prefix="localhost_access_log." suffix=".txt"
-               pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+               pattern="%h %l %u %t &quot;%r&quot; %s %b" /-->
 
+        <Context path="" docBase="{DocBasePlaceHolder}" reloadable="false" sessionCookieName="{SessionCookieNamePlaceHolder}">
+            <Valve className="org.jboss.web.rewrite.RewriteValve" asyncSupported="true"/>
+        </Context>
       </Host>
     </Engine>
   </Service>
