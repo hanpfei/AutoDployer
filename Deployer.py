@@ -10,14 +10,12 @@ import SourceCodeDownloader
 
 DPLOY_ROOT_PATH = os.environ['HOME'] + os.path.sep + "Deployed"
 
-ROOT_POM_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/pom.xml"
-JAVAAPP_ANT_CONFIG_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/build-javaapp.xml"
-WEBAPP_ANT_CONFIG_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/build-webapp.xml"
+RESOURCE_DIR_PATH = "../Resource"
+JAVAAPP_ANT_CONFIG_FILE = RESOURCE_DIR_PATH + os.path.sep + "build-javaapp.xml"
+WEBAPP_ANT_CONFIG_FILE = RESOURCE_DIR_PATH + os.path.sep + "build-webapp.xml"
 
-TOMCAT7_PACKAGE_PATH = "/Users/netease/Projects/MyProject/AutoDployer/Resource/apache-tomcat-7.0.70-macos.tgz"
-TOMCAT8_PACKAGE_PATH = "/Users/netease/Projects/MyProject/AutoDployer/Resource/apache-tomcat-8.0.30-macos.tgz"
-
-JAVAAPP_SCRIPT_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/javaApp"
+TOMCAT7_PACKAGE_PATH = RESOURCE_DIR_PATH + os.path.sep + "apache-tomcat-7.0.70-macos.tgz"
+TOMCAT8_PACKAGE_PATH = RESOURCE_DIR_PATH + os.path.sep + "apache-tomcat-8.0.30-macos.tgz"
 
 JAVA8_PATH = "/Library/Java/JavaVirtualMachines/jdk1.8.0_121.jdk/Contents/Home/jre"
 
@@ -252,7 +250,6 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     shutil.copytree(targetAppDir + os.path.sep + "compressed", targetAppExecuteDir)
 
     copyJavaConf(targetAppExecuteDir, conf)
-    shutil.copy(JAVAAPP_SCRIPT_FILE, targetAppExecuteDir)
 
     global JAVA8_PATH
     cmd = JAVA8_PATH + os.path.sep + "bin/java" + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
