@@ -180,7 +180,6 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
         return result
 
     targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
-    shutil.copy(ROOT_POM_FILE, targetDir)
 
     targetAppDir = targetDir + os.path.sep + subdir;
 
@@ -233,7 +232,6 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     # print(os.getcwd())
 
     targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
-    shutil.copy(ROOT_POM_FILE, targetDir)
 
     targetAppDir = targetDir + os.path.sep + subdir;
 
