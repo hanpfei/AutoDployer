@@ -14,7 +14,8 @@ ROOT_POM_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/pom.xml"
 JAVAAPP_ANT_CONFIG_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/build-javaapp.xml"
 WEBAPP_ANT_CONFIG_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/build-webapp.xml"
 
-TOMCAT_PACKAGE_PATH = "/Users/netease/Projects/MyProject/AutoDployer/Resource/apache-tomcat-8.0.30-macos.tgz"
+TOMCAT7_PACKAGE_PATH = "/Users/netease/Projects/MyProject/AutoDployer/Resource/apache-tomcat-7.0.70-macos.tgz"
+TOMCAT8_PACKAGE_PATH = "/Users/netease/Projects/MyProject/AutoDployer/Resource/apache-tomcat-8.0.30-macos.tgz"
 
 JAVAAPP_SCRIPT_FILE = "/Users/netease/Projects/MyProject/AutoDployer/Resource/javaApp"
 
@@ -60,10 +61,25 @@ def copyWebConf(targetAppExecuteDir, conf):
     copyFiles(srcConfDir, dstConfDir)
 
 
-def deployTomcat(targetAppExecuteDir, appname):
-    global TOMCAT_PACKAGE_PATH
+def getTomcatPkgPath(tomcat_version):
+    global TOMCAT7_PACKAGE_PATH
+    global TOMCAT8_PACKAGE_PATH
+    tomcat_version = tomcat_version.lower()
+    tomcat_pkg_path = ""
 
-    tomcat_pkg_path = TOMCAT_PACKAGE_PATH
+    if tomcat_version == "tomcat7":
+        tomcat_pkg_path =  TOMCAT7_PACKAGE_PATH
+    elif tomcat_version == "tomcat8":
+        tomcat_pkg_path = TOMCAT8_PACKAGE_PATH
+    else:
+        tomcat_pkg_path = TOMCAT7_PACKAGE_PATH
+
+    return tomcat_pkg_path
+
+
+def deployTomcat(targetAppExecuteDir, appname, tomcat_version):
+    tomcat_pkg_path = getTomcatPkgPath(tomcat_version)
+
     filename = os.path.basename(tomcat_pkg_path)
     target_tomcat_dir_name = os.path.splitext(filename)[0]
 
@@ -76,7 +92,7 @@ def deployTomcat(targetAppExecuteDir, appname):
     if os.path.isdir(target_tomcat_path):
         shutil.rmtree(target_tomcat_path)
 
-    uncompressedCmd = "tar xf " + TOMCAT_PACKAGE_PATH + " -C " + parentDir
+    uncompressedCmd = "tar xf " + tomcat_pkg_path + " -C " + parentDir
 
     SourceCodeDownloader.executeCmd(uncompressedCmd)
 
@@ -135,11 +151,12 @@ def runTomcatApp(target_tomcat_path):
     print("After runTomcatApp")
 
 
-def getTargetTomcatPath(appname):
-    global TOMCAT_PACKAGE_PATH
+def getTargetTomcatPath(appname, tomcat_version):
     global DPLOY_ROOT_PATH
 
-    tomcat_pkg_path = TOMCAT_PACKAGE_PATH
+    tomcat_pkg_path = getTomcatPkgPath(tomcat_version)
+
+
     filename = os.path.basename(tomcat_pkg_path)
     target_tomcat_dir_name = os.path.splitext(filename)[0]
 
@@ -148,7 +165,55 @@ def getTargetTomcatPath(appname):
     return target_tomcat_path
 
 
-def deployAndRun(repoPath, branch, subdir, version, appType, conf, serverName):
+def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion):
+    print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
+          + subdir + "(subdir)--:--(appType)" + appType + "(appType)--:--(conf)" + conf + "(conf)--:--(tomcatVersion)" + tomcatVersion)
+
+    result = {}
+
+    target_tomcat_path = getTargetTomcatPath(subdir, tomcatVersion)
+
+    pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
+    if os.path.isfile(pid_file_path):
+        result["code"] = 500
+        result["msg"] = "The application is already running. Please stop it first."
+        return result
+
+    targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
+    shutil.copy(ROOT_POM_FILE, targetDir)
+
+    targetAppDir = targetDir + os.path.sep + subdir;
+
+    targetBuildXmlPath = targetAppDir + os.path.sep + "build.xml"
+    # print(targetBuildXmlPath)
+
+    shutil.copy(WEBAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
+
+    os.environ["JAVA_HOME"] = ""
+
+    constructProject(targetAppDir)
+
+    targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
+
+    if os.path.isdir(targetAppExecuteDir):
+        shutil.rmtree(targetAppExecuteDir)
+
+    shutil.copytree(targetAppDir + os.path.sep + "compressed", targetAppExecuteDir)
+
+    copyWebConf(targetAppExecuteDir, conf)
+    target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir, tomcatVersion)
+    print(target_tomcat_path)
+
+    configTomcatApp(targetAppExecuteDir, target_tomcat_path)
+
+    runTomcatApp(target_tomcat_path)
+
+    result["code"] = 200
+    result["msg"] = "Successfully"
+    return result
+
+
+def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType)
 
@@ -157,22 +222,13 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf, serverName):
 
     result = {}
 
-    if appType == "java":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
-        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+    targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+    pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
 
-        if os.path.isfile(pid_file_path):
-            result["code"] = 500
-            result["msg"] = "The application is already running. Please stop it first."
-            return result
-    elif appType == "web":
-        target_tomcat_path = getTargetTomcatPath(subdir)
-
-        pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
-        if os.path.isfile(pid_file_path):
-            result["code"] = 500
-            result["msg"] = "The application is already running. Please stop it first."
-            return result
+    if os.path.isfile(pid_file_path):
+        result["code"] = 500
+        result["msg"] = "The application is already running. Please stop it first."
+        return result
 
     # print(os.getcwd())
 
@@ -184,76 +240,58 @@ def deployAndRun(repoPath, branch, subdir, version, appType, conf, serverName):
     targetBuildXmlPath = targetAppDir + os.path.sep + "build.xml"
     # print(targetBuildXmlPath)
 
-    if appType == "java":
-        shutil.copy(JAVAAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
-    elif appType == "web":
-        shutil.copy(WEBAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
+    shutil.copy(JAVAAPP_ANT_CONFIG_FILE, targetBuildXmlPath)
 
     os.environ["JAVA_HOME"] = ""
 
     constructProject(targetAppDir)
 
-    targetAppExecuteDir = ""
-    if appType == "java":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
-    elif appType == "web":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
+    targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
 
     if os.path.isdir(targetAppExecuteDir):
         shutil.rmtree(targetAppExecuteDir)
 
     shutil.copytree(targetAppDir + os.path.sep + "compressed", targetAppExecuteDir)
 
-    if appType == "java":
-        copyJavaConf(targetAppExecuteDir, conf)
-        shutil.copy(JAVAAPP_SCRIPT_FILE, targetAppExecuteDir)
+    copyJavaConf(targetAppExecuteDir, conf)
+    shutil.copy(JAVAAPP_SCRIPT_FILE, targetAppExecuteDir)
 
-        global JAVA8_PATH
-        cmd = JAVA8_PATH + os.path.sep + "bin/java" + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
-        "-verbose:gc -XX:+PrintGCDetails -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false " \
-        "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.netease.appname=napm_" + subdir + \
-        " -classpath "
+    global JAVA8_PATH
+    cmd = JAVA8_PATH + os.path.sep + "bin/java" + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
+                                                  "-verbose:gc -XX:+PrintGCDetails -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false " \
+                                                  "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.netease.appname=napm_" + subdir + " -classpath "
 
-        targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
-        libs = ""
-        for dirItem in os.listdir(targetLibDir):
-            path = os.path.join(targetLibDir, dirItem)
-            libs = libs + path + ":"
+    targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
+    libs = ""
+    for dirItem in os.listdir(targetLibDir):
+        path = os.path.join(targetLibDir, dirItem)
+        libs = libs + path + ":"
 
-        cmd = cmd + libs + " " + serverName + " &"
-        # print(cmd)
+    cmd = cmd + libs + " " + serverName + " &"
+    # print(cmd)
 
-        cwd = os.getcwd()
-        os.chdir(targetAppExecuteDir)
-        os.system(cmd)
-        os.chdir(cwd)
+    cwd = os.getcwd()
+    os.chdir(targetAppExecuteDir)
+    os.system(cmd)
+    os.chdir(cwd)
 
-        get_pic_cmd = "ps -ef | grep " + serverName + " | grep -v grep | awk '{print $2}'"
-        pid = SourceCodeDownloader.executeCmd(get_pic_cmd)
+    get_pic_cmd = "ps -ef | grep " + serverName + " | grep -v grep | awk '{print $2}'"
+    pid = SourceCodeDownloader.executeCmd(get_pic_cmd)
 
-        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
-        fileHandle = open(pid_file_path, "w")
-        pid = pid.strip()
-        fileHandle.write(pid)
-        fileHandle.close()
+    pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+    fileHandle = open(pid_file_path, "w")
+    pid = pid.strip()
+    fileHandle.write(pid)
+    fileHandle.close()
 
-        result["pid"] = pid
-
-    elif appType == "web":
-        copyWebConf(targetAppExecuteDir, conf)
-        target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir)
-        print(target_tomcat_path)
-
-        configTomcatApp(targetAppExecuteDir, target_tomcat_path)
-
-        runTomcatApp(target_tomcat_path)
+    result["pid"] = pid
 
     result["code"] = 200
     result["msg"] = "Successfully"
     return result
 
 
-def stopService(subdir, appType):
+def stopService(subdir, appType, tomcat_version):
     result = {}
     result["code"] = 200
     result["msg"] = "Successfully"
@@ -271,7 +309,7 @@ def stopService(subdir, appType):
 
         os.remove(pid_file_path)
     elif appType == "web":
-        target_tomcat_path = getTargetTomcatPath(subdir)
+        target_tomcat_path = getTargetTomcatPath(subdir, tomcat_version)
 
         pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
         if os.path.isfile(pid_file_path):
