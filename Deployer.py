@@ -307,12 +307,27 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     return result
 
 
-def killProcessFromFile(file_path):
-    pid = 0
-    if os.path.isfile(file_path):
-        file = open(file_path)
-        pid = file.readline()
+def getPidFormFile(appType, submodule):
+    if appType == "java":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + submodule
+        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+    elif appType == "web":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + submodule
+        pid_file_path = targetAppExecuteDir + os.path.sep + "webapp.pid"
 
+    pid = 0
+    if os.path.isfile(pid_file_path):
+        file = open(pid_file_path)
+        pid = file.readline()
+        os.remove(pid_file_path)
+
+    return pid
+
+
+def killProcessFromFile(appType, submodule):
+    pid = getPidFormFile(appType, submodule)
+
+    if pid != 0:
         kill_command = "kill -9 " + pid
         os.system(kill_command)
 
@@ -324,20 +339,8 @@ def stopService(subdir, appType, tomcat_version):
     result["code"] = 200
     result["msg"] = "Successfully"
 
-    if appType == "java":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
-
-        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
-        pid = killProcessFromFile(pid_file_path)
-
-        result["pid"] = pid
-
-        os.remove(pid_file_path)
-    elif appType == "web":
-        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
-        pid_file_path = targetAppExecuteDir + os.path.sep + "webapp.pid"
-
-        killProcessFromFile(pid_file_path)
+    pid = killProcessFromFile(appType, subdir)
+    result["pid"] = pid
 
     return result
 

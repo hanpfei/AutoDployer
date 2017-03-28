@@ -159,19 +159,26 @@ def stop(request):
         return check_result
 
     config_name = request.GET.get('configName')
-    if app_type == "java":
-        config = JavaAppConfig.objects.get(config_name=config_name)
-    elif app_type == "web":
-        config = WebAppConfig.objects.get(config_name=config_name)
+    result = {}
+    result["code"] = 200
+    result["msg"] = "Successfully"
+    try:
+        if app_type == "java":
+            config = JavaAppConfig.objects.get(config_name=config_name)
+        elif app_type == "web":
+            config = WebAppConfig.objects.get(config_name=config_name)
 
-    subdir = config.submodule
-    appType = config.app_type
+        subdir = config.submodule
+        appType = config.app_type
 
-    if app_type == "java":
-        result = Deployer.stopService(subdir, appType, "")
-    elif app_type == "web":
-        tomcatVersion = config.tomcat_version
-        result = Deployer.stopService(subdir, appType, tomcatVersion)
+        if app_type == "java":
+            result = Deployer.stopService(subdir, appType, "")
+        elif app_type == "web":
+            tomcatVersion = config.tomcat_version
+            result = Deployer.stopService(subdir, appType, tomcatVersion)
+    except Exception as err:
+        print(err)
+
 
     json_str = json.dumps(result)
     return HttpResponse(json_str)
