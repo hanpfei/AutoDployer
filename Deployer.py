@@ -165,6 +165,23 @@ def getTargetTomcatPath(appname, tomcat_version):
     return target_tomcat_path
 
 
+def getProcessPid(key):
+    get_pic_cmd = "ps -ef | grep " + key + " | grep -v grep | awk '{print $2}'"
+    pid = SourceCodeDownloader.executeCmd(get_pic_cmd)
+    pid = pid.strip()
+    return pid
+
+
+def savePid(pid_file_path, process_key):
+    pid = getProcessPid(process_key)
+
+    fileHandle = open(pid_file_path, "w")
+    fileHandle.write(pid)
+    fileHandle.close()
+
+    return pid
+
+
 def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType + "(appType)--:--(conf)" + conf + "(conf)--:--(tomcatVersion)" + tomcatVersion)
@@ -206,6 +223,9 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     configTomcatApp(targetAppExecuteDir, target_tomcat_path)
 
     runTomcatApp(target_tomcat_path)
+
+    pid_file_path = targetAppExecuteDir + os.path.sep + "webapp.pid"
+    savePid(pid_file_path, os.path.basename(target_tomcat_path))
 
     result["code"] = 200
     result["msg"] = "Successfully"
@@ -277,20 +297,26 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     os.system(cmd)
     os.chdir(cwd)
 
-    get_pic_cmd = "ps -ef | grep " + serverName + " | grep -v grep | awk '{print $2}'"
-    pid = SourceCodeDownloader.executeCmd(get_pic_cmd)
-
     pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
-    fileHandle = open(pid_file_path, "w")
-    pid = pid.strip()
-    fileHandle.write(pid)
-    fileHandle.close()
+    pid = savePid(pid_file_path, serverName)
 
     result["pid"] = pid
 
     result["code"] = 200
     result["msg"] = "Successfully"
     return result
+
+
+def killProcessFromFile(file_path):
+    pid = 0
+    if os.path.isfile(file_path):
+        file = open(file_path)
+        pid = file.readline()
+
+        kill_command = "kill -9 " + pid
+        os.system(kill_command)
+
+    return pid
 
 
 def stopService(subdir, appType, tomcat_version):
@@ -300,24 +326,19 @@ def stopService(subdir, appType, tomcat_version):
 
     if appType == "java":
         targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
-        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
-        file = open(pid_file_path)
-        pid = file.readline()
 
-        kill_command = "kill -9 " + pid
-        os.system(kill_command)
+        pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
+        pid = killProcessFromFile(pid_file_path)
 
         result["pid"] = pid
 
         os.remove(pid_file_path)
     elif appType == "web":
-        target_tomcat_path = getTargetTomcatPath(subdir, tomcat_version)
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
+        pid_file_path = targetAppExecuteDir + os.path.sep + "webapp.pid"
 
-        pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
-        if os.path.isfile(pid_file_path):
-            daemon_script_path = target_tomcat_path + os.path.sep + "bin/catalina.sh stop"
-            # print(daemon_script_path)
-            os.system(daemon_script_path)
+        killProcessFromFile(pid_file_path)
+
     return result
 
 
