@@ -3,3 +3,4 @@
 AutoDeployerServer/deploy/migrations/
 db.sqlite3
 nohup.out
+.DS_Store
