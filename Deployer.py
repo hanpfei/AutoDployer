@@ -195,9 +195,7 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     print(pid_file_path)
     print("pid = " + pid)
     if os.path.isfile(pid_file_path) or (pid != 0 and pid != ""):
-        result["code"] = 500
-        result["msg"] = "The application is already running. Please stop it first."
-        return result
+        stopService(subdir, appType, tomcatVersion)
 
     targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
 
@@ -214,10 +212,14 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
 
     targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
 
+    compressed_dir = targetAppDir + os.path.sep + "compressed"
+    if os.path.isdir(compressed_dir):
+        return result
+
     if os.path.isdir(targetAppExecuteDir):
         shutil.rmtree(targetAppExecuteDir)
 
-    shutil.copytree(targetAppDir + os.path.sep + "compressed", targetAppExecuteDir)
+    shutil.copytree(compressed_dir, targetAppExecuteDir)
 
     copyWebConf(targetAppExecuteDir, conf)
     target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir, tomcatVersion)
@@ -250,9 +252,7 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     pid = getProcessPid(serverName)
 
     if os.path.isfile(pid_file_path) or pid != 0:
-        result["code"] = 500
-        result["msg"] = "The application is already running. Please stop it first."
-        return result
+        stopService(subdir, appType, "")
 
     # print(os.getcwd())
 
@@ -270,6 +270,10 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     constructProject(targetAppDir)
 
     targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+
+    compressed_dir = targetAppDir + os.path.sep + "compressed"
+    if os.path.isdir(compressed_dir):
+        return result
 
     if os.path.isdir(targetAppExecuteDir):
         shutil.rmtree(targetAppExecuteDir)
@@ -324,13 +328,12 @@ def getPidFormFile(appType, submodule):
     if os.path.isfile(pid_file_path):
         file = open(pid_file_path)
         pid = file.readline()
-        os.remove(pid_file_path)
 
-    return pid
+    return pid, pid_file_path
 
 
 def killProcess(appType, submodule):
-    pid = getPidFormFile(appType, submodule)
+    pid, pid_file_path = getPidFormFile(appType, submodule)
 
     if pid == 0:
         pid = getProcessPid(submodule)
@@ -340,6 +343,7 @@ def killProcess(appType, submodule):
     if pid != 0:
         kill_command = "kill -9 " + pid
         os.system(kill_command)
+        os.remove(pid_file_path)
 
     return pid
 

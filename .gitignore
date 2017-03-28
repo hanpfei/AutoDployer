@@ -2,4 +2,4 @@
 *.pyc
 AutoDeployerServer/deploy/migrations/
 db.sqlite3
-
+nohup.out

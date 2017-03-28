@@ -162,6 +162,10 @@ def deploy(request):
     result = {}
     config_name = request.GET.get('configName')
     config = None
+
+    nohupfile = "./nohup.out"
+    nohup_size = os.path.getsize(nohupfile)
+
     try:
         config = JavaAppConfig.objects.get(config_name=config_name)
     except Exception as err:
@@ -196,8 +200,26 @@ def deploy(request):
 
             result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version)
 
-    json_str = json.dumps(result)
-    return HttpResponse(json_str)
+    response = HttpResponse()
+
+    fileHandle = open(nohupfile, "r")
+    fileHandle.seek(nohup_size)
+
+    response.write('<html><head>')
+
+    style = """
+    <style>
+    p{ padding:1px 0}
+    /* css注释： 设置padding为上下10px */
+    </style></head>
+    """
+    response.write(style)
+
+    for line in fileHandle.readlines():
+        response.write("%s<br/>" % (str(line)))
+
+    response.write('</html>')
+    return response
 
 
 def stop(request):

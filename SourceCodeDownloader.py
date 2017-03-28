@@ -65,7 +65,3 @@ def downloadSourceCode(target_dir, repo_path, branch, version):
 
     os.chdir(cwd)
     return target_dir
-
-
-
-
