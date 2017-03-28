@@ -135,9 +135,11 @@ def configTomcatApp(targetAppExecuteDir, target_tomcat_path):
     os.rename(serverXmlPathTmp, serverXmlPath)
 
 
-def runTomcatApp(target_tomcat_path):
-    global JAVA8_PATH
-    os.environ["JAVA_HOME"] = JAVA8_PATH
+def runTomcatApp(target_tomcat_path, java_version=""):
+    if java_version != "":
+        if java_version == "java8":
+            global JAVA8_PATH
+            os.environ["JAVA_HOME"] = JAVA8_PATH
     daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh run &"
 
     cwd = os.getcwd()
@@ -210,7 +212,7 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     return result
 
 
-def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName):
+def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName, java_version=""):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType)
 
@@ -251,8 +253,13 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
 
     copyJavaConf(targetAppExecuteDir, conf)
 
-    global JAVA8_PATH
-    cmd = JAVA8_PATH + os.path.sep + "bin/java" + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
+    javapath = "java"
+    if java_version != "":
+        if java_version == "java8":
+            global JAVA8_PATH
+            os.environ["JAVA_HOME"] = JAVA8_PATH
+            javapath = JAVA8_PATH + os.path.sep + "bin/java"
+    cmd = javapath + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
                                                   "-verbose:gc -XX:+PrintGCDetails -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false " \
                                                   "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.netease.appname=napm_" + subdir + " -classpath "
 
