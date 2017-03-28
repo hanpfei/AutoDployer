@@ -191,7 +191,10 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     target_tomcat_path = getTargetTomcatPath(subdir, tomcatVersion)
 
     pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
-    if os.path.isfile(pid_file_path):
+    pid = getProcessPid(os.path.basename(target_tomcat_path))
+    print(pid_file_path)
+    print("pid = " + pid)
+    if os.path.isfile(pid_file_path) or (pid != 0 and pid != ""):
         result["code"] = 500
         result["msg"] = "The application is already running. Please stop it first."
         return result
@@ -244,7 +247,9 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
     pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"
 
-    if os.path.isfile(pid_file_path):
+    pid = getProcessPid(serverName)
+
+    if os.path.isfile(pid_file_path) or pid != 0:
         result["code"] = 500
         result["msg"] = "The application is already running. Please stop it first."
         return result

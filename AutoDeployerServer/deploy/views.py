@@ -13,6 +13,7 @@ import Deployer
 def checkAppType(app_type):
     result = None
     if app_type != "java" and app_type != "web":
+        result = {}
         result["code"] = 500
         result["msg"] = "Unrecognined app type: " + str(app_type)
         json_str = json.dumps(result)
@@ -75,35 +76,75 @@ def createConfig(request):
 
     return HttpResponse(json_str)
 
+config_line_template = """
+<tr>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+</tr>\n
+"""
+
+config_table_template = """
+<table border="1">
+<tr>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+</tr>
+%s
+</table>
+"""
+
 
 def list_config(request):
-    app_type = request.GET.get('appType')
-    check_result = checkAppType(app_type)
-    if check_result:
-        return check_result
+    all_javaapp_config_list = JavaAppConfig.objects.order_by('-config_name')
+    all_webapp_config_list = WebAppConfig.objects.order_by('-config_name')
 
-    if app_type == "java":
-        all_config_list = JavaAppConfig.objects.order_by('-config_name')
-    elif app_type == "web":
-        all_config_list = WebAppConfig.objects.order_by('-config_name')
+    result_str = ""
+    if len(all_javaapp_config_list) > 0:
+        table_lines = ""
+        for config in all_javaapp_config_list:
+            table_line = config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
+                                                 config.app_type, config.conf_path, config.server_name)
+            table_lines = table_lines + table_line
 
-    serialized_configs = []
-    for config in all_config_list:
-        serialized_configs.append(config.toJSON())
-    json_str = json.dumps(serialized_configs)
-    return HttpResponse(json_str)
+        table = config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
+                                         "App tpye", "Conf path", "Server name", table_lines)
+        result_str = result_str + table
+        result_str = result_str + "<br /><br />"
+
+    if len(all_webapp_config_list) > 0:
+        table_lines = ""
+        for config in all_webapp_config_list:
+            table_line = config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
+                                                  config.app_type, config.conf_path, config.tomcat_version)
+            table_lines = table_lines + table_line
+        table = config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
+                                         "App tpye", "Conf path", "Tomcat version", table_lines)
+        result_str = result_str + table
+
+    if len(all_webapp_config_list) <= 0 and len(all_javaapp_config_list) <= 0:
+        result_str = "No config now!"
+
+    # print(result_str)
+    content = '<html>' + result_str + '</html>'
+    resp = HttpResponse()
+    resp.write(content)
+    return resp
 
 
 def delete_config(request):
-    app_type = request.GET.get('appType')
-    check_result = checkAppType(app_type)
-    if check_result:
-        return check_result
-
     config_name = request.GET.get('configName')
-    if app_type == "java":
-        configs = JavaAppConfig.objects.filter(config_name=config_name)
-    elif app_type == "web":
+    configs = JavaAppConfig.objects.filter(config_name=config_name)
+    if not configs:
         configs = WebAppConfig.objects.filter(config_name=config_name)
 
     print(str(configs))
@@ -118,33 +159,26 @@ def delete_config(request):
 
 
 def deploy(request):
-    app_type = request.GET.get('appType')
-    check_result = checkAppType(app_type)
-    if check_result:
-        return check_result
-
     result = {}
     config_name = request.GET.get('configName')
-    if app_type == "java":
-        config = None
-        try:
-            config = JavaAppConfig.objects.get(config_name=config_name)
-        except Exception as err:
-            result["code"] = 500
-            result["msg"] = "The config has not been existing."
+    config = None
+    try:
+        config = JavaAppConfig.objects.get(config_name=config_name)
+    except Exception as err:
+        result["code"] = 500
+        result["msg"] = "The config has not been existing."
 
-        if config:
-            repoPath = config.repo_path
-            branch = config.branch
-            subdir = config.submodule
-            appType = config.app_type
-            conf = config.conf_path
-            serverName = config.server_name
-            version = config.version
+    if config:
+        repoPath = config.repo_path
+        branch = config.branch
+        subdir = config.submodule
+        appType = config.app_type
+        conf = config.conf_path
+        serverName = config.server_name
+        version = config.version
 
-            result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName)
-    elif app_type == "web":
-        config = None
+        result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName)
+    else:
         try:
             config = WebAppConfig.objects.get(config_name=config_name)
         except Exception as err:
@@ -167,21 +201,28 @@ def deploy(request):
 
 
 def stop(request):
-    app_type = request.GET.get('appType')
-    check_result = checkAppType(app_type)
-    if check_result:
-        return check_result
-
     config_name = request.GET.get('configName')
     result = {}
     result["code"] = 200
     result["msg"] = "Successfully"
-    try:
-        if app_type == "java":
-            config = JavaAppConfig.objects.get(config_name=config_name)
-        elif app_type == "web":
-            config = WebAppConfig.objects.get(config_name=config_name)
 
+    config = None
+    try:
+        config = JavaAppConfig.objects.get(config_name=config_name)
+        if config:
+            app_type = "java"
+    except Exception as err:
+        print(err)
+
+    if not config:
+        try:
+            config = WebAppConfig.objects.get(config_name=config_name)
+        except Exception as err:
+            print(err)
+        if config:
+            app_type = "web"
+
+    if app_type:
         subdir = config.submodule
         appType = config.app_type
 
@@ -190,31 +231,27 @@ def stop(request):
         elif app_type == "web":
             tomcatVersion = config.tomcat_version
             result = Deployer.stopService(subdir, appType, tomcatVersion)
-    except Exception as err:
-        print(err)
-
 
     json_str = json.dumps(result)
     return HttpResponse(json_str)
 
 
 def restart(request):
-    app_type = request.GET.get('appType')
-    check_result = checkAppType(app_type)
-    if check_result:
-        return check_result
-
     config_name = request.GET.get('configName')
+    config = None
     try:
-        if app_type == "java":
-            config = JavaAppConfig.objects.get(config_name=config_name)
-        elif app_type == "web":
+        config = JavaAppConfig.objects.get(config_name=config_name)
+    except Exception as err:
+        print(err)
+    if not config:
+        try:
             config = WebAppConfig.objects.get(config_name=config_name)
+        except Exception as err:
+            print(err)
 
+    if config:
         subdir = config.submodule
         appType = config.app_type
 
         Deployer.restartService(subdir, appType)
-    except Exception as err:
-        print(err)
     return HttpResponse("Success")

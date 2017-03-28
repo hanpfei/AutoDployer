@@ -25,6 +25,11 @@ class JavaAppConfig(models.Model):
         serialized_config["server_name"] = self.server_name
         return json.dumps(serialized_config)
 
+    def toString(self):
+        str = "%-30s%-80s%-20s%-30s%-15s%-25s%-50s" % (self.config_name, self.repo_path, self.branch, self.submodule,
+                                              self.app_type, self.conf_path, self.server_name)
+        return str
+
 class WebAppConfig(models.Model):
     config_name = models.CharField(max_length=1024)
     repo_path = models.CharField(max_length=2048)
@@ -45,3 +50,8 @@ class WebAppConfig(models.Model):
         serialized_config["conf_path"] = self.conf_path
         serialized_config["tomcat_version"] = self.tomcat_version
         return json.dumps(serialized_config)
+
+    def toString(self):
+        str = "%-30s%-80s%-20s%-30s%-15s%-25s%-20s" % (self.config_name, self.repo_path, self.branch, self.submodule,
+                                                        self.app_type, self.conf_path, self.tomcat_version)
+        return str
