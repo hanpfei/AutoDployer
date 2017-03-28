@@ -133,7 +133,7 @@ def deploy(request):
             result["code"] = 500
             result["msg"] = "The config has not been existing."
 
-        if not config:
+        if config:
             repoPath = config.repo_path
             branch = config.branch
             subdir = config.submodule
@@ -151,7 +151,7 @@ def deploy(request):
             result["code"] = 500
             result["msg"] = "The config has not been existing."
 
-        if not config:
+        if config:
             repoPath = config.repo_path
             branch = config.branch
             subdir = config.submodule
