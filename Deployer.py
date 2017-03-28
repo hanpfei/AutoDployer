@@ -140,7 +140,7 @@ def runTomcatApp(target_tomcat_path, java_version=""):
         if java_version == "java8":
             global JAVA8_PATH
             os.environ["JAVA_HOME"] = JAVA8_PATH
-    daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh run &"
+    daemon_script_path = target_tomcat_path + os.path.sep + "bin/catalina.sh run &"
 
     cwd = os.getcwd()
     os.chdir(target_tomcat_path)
@@ -315,7 +315,7 @@ def stopService(subdir, appType, tomcat_version):
 
         pid_file_path = target_tomcat_path + os.path.sep + "logs/catalina-daemon.pid"
         if os.path.isfile(pid_file_path):
-            daemon_script_path = target_tomcat_path + os.path.sep + "bin/daemon.sh stop"
+            daemon_script_path = target_tomcat_path + os.path.sep + "bin/catalina.sh stop"
             # print(daemon_script_path)
             os.system(daemon_script_path)
     return result
