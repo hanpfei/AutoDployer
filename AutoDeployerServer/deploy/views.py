@@ -123,30 +123,44 @@ def deploy(request):
     if check_result:
         return check_result
 
+    result = {}
     config_name = request.GET.get('configName')
     if app_type == "java":
-        config = JavaAppConfig.objects.get(config_name=config_name)
-        repoPath = config.repo_path
-        branch = config.branch
-        subdir = config.submodule
-        appType = config.app_type
-        conf = config.conf_path
-        serverName = config.server_name
-        version = config.version
+        config = None
+        try:
+            config = JavaAppConfig.objects.get(config_name=config_name)
+        except Exception as err:
+            result["code"] = 500
+            result["msg"] = "The config has not been existing."
 
-        result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName)
+        if not config:
+            repoPath = config.repo_path
+            branch = config.branch
+            subdir = config.submodule
+            appType = config.app_type
+            conf = config.conf_path
+            serverName = config.server_name
+            version = config.version
+
+            result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName)
     elif app_type == "web":
-        config = WebAppConfig.objects.get(config_name=config_name)
+        config = None
+        try:
+            config = WebAppConfig.objects.get(config_name=config_name)
+        except Exception as err:
+            result["code"] = 500
+            result["msg"] = "The config has not been existing."
 
-        repoPath = config.repo_path
-        branch = config.branch
-        subdir = config.submodule
-        appType = config.app_type
-        conf = config.conf_path
-        tomcat_version = config.tomcat_version
-        version = config.version
+        if not config:
+            repoPath = config.repo_path
+            branch = config.branch
+            subdir = config.submodule
+            appType = config.app_type
+            conf = config.conf_path
+            tomcat_version = config.tomcat_version
+            version = config.version
 
-        result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version)
+            result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version)
 
     json_str = json.dumps(result)
     return HttpResponse(json_str)
@@ -191,13 +205,16 @@ def restart(request):
         return check_result
 
     config_name = request.GET.get('configName')
-    if app_type == "java":
-        config = JavaAppConfig.objects.get(config_name=config_name)
-    elif app_type == "web":
-        config = WebAppConfig.objects.get(config_name=config_name)
+    try:
+        if app_type == "java":
+            config = JavaAppConfig.objects.get(config_name=config_name)
+        elif app_type == "web":
+            config = WebAppConfig.objects.get(config_name=config_name)
 
-    subdir = config.submodule
-    appType = config.app_type
+        subdir = config.submodule
+        appType = config.app_type
 
-    Deployer.restartService(subdir, appType)
+        Deployer.restartService(subdir, appType)
+    except Exception as err:
+        print(err)
     return HttpResponse("Success")
