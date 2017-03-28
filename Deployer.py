@@ -324,8 +324,13 @@ def getPidFormFile(appType, submodule):
     return pid
 
 
-def killProcessFromFile(appType, submodule):
+def killProcess(appType, submodule):
     pid = getPidFormFile(appType, submodule)
+
+    if pid == 0:
+        pid = getProcessPid(submodule)
+        if not pid:
+            pid = 0
 
     if pid != 0:
         kill_command = "kill -9 " + pid
@@ -339,7 +344,7 @@ def stopService(subdir, appType, tomcat_version):
     result["code"] = 200
     result["msg"] = "Successfully"
 
-    pid = killProcessFromFile(appType, subdir)
+    pid = killProcess(appType, subdir)
     result["pid"] = pid
 
     return result
