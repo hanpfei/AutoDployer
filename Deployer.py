@@ -20,6 +20,8 @@ TOMCAT8_PACKAGE_PATH = RESOURCE_DIR_PATH + os.path.sep + "apache-tomcat-8.0.30-m
 
 JAVA8_PATH = "/Library/Java/JavaVirtualMachines/jdk1.8.0_121.jdk/Contents/Home/jre"
 
+JAVA_APP_INDENTIFIER = "java"
+WEB_APP_INDENTIFIER = "web"
 
 def printUsageAndExit():
     print("Usage:")
@@ -352,6 +354,7 @@ def getPidFormFile(appType, submodule):
     if os.path.isfile(pid_file_path):
         file = open(pid_file_path)
         pid = file.readline()
+        file.close()
 
     return pid, pid_file_path
 

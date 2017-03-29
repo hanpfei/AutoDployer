@@ -14,7 +14,7 @@ import Deployer
 
 def checkAppType(app_type):
     result = None
-    if app_type != "java" and app_type != "web":
+    if app_type != Deployer.JAVA_APP_INDENTIFIER and app_type != Deployer.WEB_APP_INDENTIFIER:
         result = {}
         result["code"] = 500
         result["msg"] = "Unrecognined app type: " + str(app_type)
@@ -40,9 +40,9 @@ def createConfig(request):
     if not version:
         version = ""
 
-    if app_type == "java":
+    if app_type == Deployer.JAVA_APP_INDENTIFIER:
         configs = JavaAppConfig.objects.filter(config_name=config_name)
-    elif app_type == "web":
+    elif app_type == Deployer.WEB_APP_INDENTIFIER:
         configs = WebAppConfig.objects.filter(config_name=config_name)
 
     if len(configs) > 0:
@@ -163,19 +163,24 @@ def delete_config(request):
 def deploy(request):
     result = {}
     config_name = request.GET.get('configName')
-    config = None
 
     nohupfile = "./nohup.out"
     nohup_size = os.path.getsize(nohupfile)
 
+    config, appType = getConfig(config_name)
+
+    if not config:
+        result["code"] = 500
+        result["msg"] = "The config has not been existing."
+        json_str = json.dumps(result)
+        return HttpResponse(json_str)
+
     try:
         config = JavaAppConfig.objects.get(config_name=config_name)
     except Exception as err:
-        result["code"] = 500
-        result["msg"] = "The config has not been existing."
         print(err)
 
-    if config:
+    if appType == Deployer.JAVA_APP_INDENTIFIER:
         repoPath = config.repo_path
         branch = config.branch
         subdir = config.submodule
@@ -185,23 +190,16 @@ def deploy(request):
         version = config.version
 
         result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName)
-    else:
-        try:
-            config = WebAppConfig.objects.get(config_name=config_name)
-        except Exception as err:
-            result["code"] = 500
-            result["msg"] = "The config has not been existing."
+    elif appType == Deployer.WEB_APP_INDENTIFIER:
+        repoPath = config.repo_path
+        branch = config.branch
+        subdir = config.submodule
+        appType = config.app_type
+        conf = config.conf_path
+        tomcat_version = config.tomcat_version
+        version = config.version
 
-        if config:
-            repoPath = config.repo_path
-            branch = config.branch
-            subdir = config.submodule
-            appType = config.app_type
-            conf = config.conf_path
-            tomcat_version = config.tomcat_version
-            version = config.version
-
-            result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version)
+        result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version)
 
     response = HttpResponse()
 
@@ -222,6 +220,8 @@ def deploy(request):
     for line in fileHandle.readlines():
         response.write("%s<br/>" % (str(line)))
 
+    fileHandle.close()
+
     response.write('</html>')
     return response
 
@@ -232,30 +232,15 @@ def stop(request):
     result["code"] = 200
     result["msg"] = "Successfully"
 
-    config = None
-    app_type = None
-    try:
-        config = JavaAppConfig.objects.get(config_name=config_name)
-        if config:
-            app_type = "java"
-    except Exception as err:
-        print(err)
+    config, appType = getConfig(config_name)
 
-    if not config:
-        try:
-            config = WebAppConfig.objects.get(config_name=config_name)
-        except Exception as err:
-            print(err)
-        if config:
-            app_type = "web"
-
-    if app_type:
+    if config:
         subdir = config.submodule
         appType = config.app_type
 
-        if app_type == "java":
+        if appType == Deployer.JAVA_APP_INDENTIFIER:
             result = Deployer.stopService(subdir, appType, "")
-        elif app_type == "web":
+        elif appType == Deployer.WEB_APP_INDENTIFIER:
             tomcatVersion = config.tomcat_version
             result = Deployer.stopService(subdir, appType, tomcatVersion)
 
@@ -265,16 +250,8 @@ def stop(request):
 
 def restart(request):
     config_name = request.GET.get('configName')
-    config = None
-    try:
-        config = JavaAppConfig.objects.get(config_name=config_name)
-    except Exception as err:
-        print(err)
-    if not config:
-        try:
-            config = WebAppConfig.objects.get(config_name=config_name)
-        except Exception as err:
-            print(err)
+
+    config, appType = getConfig(config_name)
 
     if config:
         subdir = config.submodule
@@ -286,18 +263,18 @@ def restart(request):
 
 def getConfig(config_name):
     config = None
-    appType = ""
+    appType = None
     try:
         config = JavaAppConfig.objects.get(config_name=config_name)
     except Exception as err:
         print(err)
     if config:
-        appType = "java"
+        appType = Deployer.JAVA_APP_INDENTIFIER
     else:
         try:
             config = WebAppConfig.objects.get(config_name=config_name)
             if config:
-                appType = "java"
+                appType = Deployer.WEB_APP_INDENTIFIER
         except Exception as err:
             print(err)
 
@@ -307,11 +284,7 @@ def getConfig(config_name):
 def getlog(request):
     config_name = request.GET.get('configName')
 
-    nohupfile = "./nohup.out"
     response = HttpResponse()
-
-    fileHandle = open(nohupfile, "r")
-
     response.write('<html><head>')
 
     style = """
@@ -322,8 +295,12 @@ def getlog(request):
         """
     response.write(style)
 
+    nohupfile = "./nohup.out"
+    fileHandle = open(nohupfile, "r")
+
     for line in fileHandle.readlines():
         response.write("%s<br/>" % (str(line)))
+    fileHandle.close()
 
     config, appType = getConfig(config_name)
 
@@ -331,13 +308,14 @@ def getlog(request):
         subdir = config.submodule
         appType = config.app_type
         tomcat_verions = ""
-        if appType == "web":
+        if appType == Deployer.WEB_APP_INDENTIFIER:
             tomcat_verions = config.tomcat_version
         appnohup_file_path = Deployer.getTargetExecDir(subdir, tomcat_verions, appType) + os.path.sep + "nohup.out"
         if os.path.isfile(appnohup_file_path):
             appnohup_fileHandle = open(appnohup_file_path, "r")
             for line in appnohup_fileHandle.readlines():
                 response.write("%s<br/>" % (str(line)))
+            appnohup_fileHandle.close()
 
     response.write('</html>')
     return response
