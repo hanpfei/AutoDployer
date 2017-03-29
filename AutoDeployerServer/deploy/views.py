@@ -8,6 +8,7 @@ from deploy.models import WebAppConfig
 
 import json
 import os
+from urllib.parse import unquote
 
 import Deployer
 
@@ -64,6 +65,13 @@ def createConfig(request):
 
         config = JavaAppConfig(config_name=config_name, repo_path=repo_path, branch=branch, submodule=submodule,
                            app_type=app_type, conf_path=conf_path, server_name=server_name, version=version)
+        javaopts = request.GET.get('javaopts')
+        config.javaopts = unquote(javaopts)
+
+        javaVersion = request.GET.get('javaVersion')
+        if javaVersion:
+            config.java_version = javaVersion
+
     elif app_type == "web":
         tomcat_version = request.GET.get('tomcatVersion')
         if not tomcat_version:
@@ -72,14 +80,30 @@ def createConfig(request):
         config = WebAppConfig(config_name=config_name, repo_path=repo_path, branch=branch, submodule=submodule,
                            app_type=app_type,
                            conf_path=conf_path, tomcat_version=tomcat_version, version=version)
+
+        connectorPort = request.GET.get('connectorPort')
+        if connectorPort:
+            config.connector_port = connectorPort
+
+        redirectPort = request.GET.get('redirectPort')
+        if redirectPort:
+            config.redirect_port = redirectPort
+
+        javaVersion = request.GET.get('javaVersion')
+        if javaVersion:
+            config.java_version = javaVersion
+
     config.save()
 
     json_str = config.toJSON()
 
     return HttpResponse(json_str)
 
-config_line_template = """
+javaapp_config_line_template = """
 <tr>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
 <td>%s</td>
 <td>%s</td>
 <td>%s</td>
@@ -90,9 +114,12 @@ config_line_template = """
 </tr>\n
 """
 
-config_table_template = """
+javaapp_config_table_template = """
 <table border="1">
 <tr>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
 <th>%s</th>
 <th>%s</th>
 <th>%s</th>
@@ -105,6 +132,40 @@ config_table_template = """
 </table>
 """
 
+webapp_config_line_template = """
+<tr>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+<td>%s</td>
+</tr>\n
+"""
+
+webapp_config_table_template = """
+<table border="1">
+<tr>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+<th>%s</th>
+</tr>
+%s
+</table>
+"""
 
 def list_config(request):
     all_javaapp_config_list = JavaAppConfig.objects.order_by('-config_name')
@@ -114,23 +175,26 @@ def list_config(request):
     if len(all_javaapp_config_list) > 0:
         table_lines = ""
         for config in all_javaapp_config_list:
-            table_line = config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
-                                                 config.app_type, config.conf_path, config.server_name)
+            table_line = javaapp_config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
+                                                 config.app_type, config.conf_path, config.server_name, config.version, config.javaopts,
+                                                 config.java_version)
             table_lines = table_lines + table_line
 
-        table = config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
-                                         "App tpye", "Conf path", "Server name", table_lines)
+        table = javaapp_config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
+                                         "App tpye", "Conf path", "Server name", "Version", "Java opts", "Java version", table_lines)
         result_str = result_str + table
         result_str = result_str + "<br /><br />"
 
     if len(all_webapp_config_list) > 0:
         table_lines = ""
         for config in all_webapp_config_list:
-            table_line = config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
-                                                  config.app_type, config.conf_path, config.tomcat_version)
+            table_line = webapp_config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
+                                                        config.app_type, config.conf_path, config.tomcat_version, config.version,
+                                                        config.connector_port, config.redirect_port, config.java_version)
             table_lines = table_lines + table_line
-        table = config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
-                                         "App tpye", "Conf path", "Tomcat version", table_lines)
+        table = webapp_config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
+                                         "App tpye", "Conf path", "Tomcat version", "Version", "Connector port", "Redirect port",
+                                                "Java version", table_lines)
         result_str = result_str + table
 
     if len(all_webapp_config_list) <= 0 and len(all_javaapp_config_list) <= 0:
@@ -144,18 +208,24 @@ def list_config(request):
 
 
 def delete_config(request):
-    config_name = request.GET.get('configName')
-    configs = JavaAppConfig.objects.filter(config_name=config_name)
-    if not configs:
-        configs = WebAppConfig.objects.filter(config_name=config_name)
-
-    print(str(configs))
-    for config in configs:
-        config.delete()
-
     result = {}
     result["code"] = 200
     result["msg"] = "Successfully"
+
+    config_name = request.GET.get('configName')
+    if config_name:
+        configs = JavaAppConfig.objects.filter(config_name=config_name)
+        if not configs:
+            configs = WebAppConfig.objects.filter(config_name=config_name)
+
+        print(str(configs))
+        for config in configs:
+            config.delete()
+    else:
+        result["code"] = 500
+        result["msg"] = "Unrecognized configName: " + str(config_name)
+
+
     json_str = json.dumps(result)
     return HttpResponse(json_str)
 
@@ -175,31 +245,26 @@ def deploy(request):
         json_str = json.dumps(result)
         return HttpResponse(json_str)
 
-    try:
-        config = JavaAppConfig.objects.get(config_name=config_name)
-    except Exception as err:
-        print(err)
+    repoPath = config.repo_path
+    branch = config.branch
+    subdir = config.submodule
+    appType = config.app_type
+    conf = config.conf_path
+    version = config.version
+    javaVersion = config.java_version
 
     if appType == Deployer.JAVA_APP_INDENTIFIER:
-        repoPath = config.repo_path
-        branch = config.branch
-        subdir = config.submodule
-        appType = config.app_type
-        conf = config.conf_path
         serverName = config.server_name
-        version = config.version
+        javaopts = config.javaopts
 
-        result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName)
+        result = Deployer.deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName, javaopts, javaVersion)
     elif appType == Deployer.WEB_APP_INDENTIFIER:
-        repoPath = config.repo_path
-        branch = config.branch
-        subdir = config.submodule
-        appType = config.app_type
-        conf = config.conf_path
         tomcat_version = config.tomcat_version
-        version = config.version
+        connectorPort = config.connector_port
+        redirectPort = config.redirect_port
 
-        result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version)
+        result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version,
+                                                connectorPort, redirectPort, javaVersion)
 
     response = HttpResponse()
 
@@ -296,11 +361,12 @@ def getlog(request):
     response.write(style)
 
     nohupfile = "./nohup.out"
-    fileHandle = open(nohupfile, "r")
+    if os.path.isfile(nohupfile):
+        fileHandle = open(nohupfile, "r")
 
-    for line in fileHandle.readlines():
-        response.write("%s<br/>" % (str(line)))
-    fileHandle.close()
+        for line in fileHandle.readlines():
+            response.write("%s<br/>" % (str(line)))
+        fileHandle.close()
 
     config, appType = getConfig(config_name)
 

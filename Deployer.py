@@ -105,11 +105,9 @@ def deployTomcat(targetAppExecuteDir, appname, tomcat_version):
     return target_tomcat_path
 
 
-def configTomcatApp(targetAppExecuteDir, target_tomcat_path):
+def configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redirectPort):
     serverXmlPath = target_tomcat_path + os.path.sep + "conf/server.xml"
 
-    connectorPort = "8080"
-    redirectPort = "8443"
     docBase = targetAppExecuteDir
     sessionCookieName = os.path.basename(targetAppExecuteDir)
 
@@ -158,8 +156,6 @@ def runTomcatApp(target_tomcat_path, java_version=""):
         print(err)
     os.chdir(cwd)
 
-    print("After runTomcatApp")
-
 
 def getTargetTomcatPath(appname, tomcat_version):
     global DPLOY_ROOT_PATH
@@ -201,9 +197,10 @@ def getTargetExecDir(subdir, tomcatVersion, appType):
     return  targetAppExecuteDir
 
 
-def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion):
+def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion, connectorPort, redirectPort, java_version=""):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
-          + subdir + "(subdir)--:--(appType)" + appType + "(appType)--:--(conf)" + conf + "(conf)--:--(tomcatVersion)" + tomcatVersion)
+          + subdir + "(subdir)--:--(appType)" + appType + "(appType)--:--(conf)" + conf + "(conf)--:--(tomcatVersion)"
+          + tomcatVersion + "(tomcatVersion)--:--(connectorPort)" + connectorPort + "(connectorPort)--:--(redirectPort)" + redirectPort)
 
     result = {}
 
@@ -244,7 +241,7 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir, tomcatVersion)
     print(target_tomcat_path)
 
-    configTomcatApp(targetAppExecuteDir, target_tomcat_path)
+    configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redirectPort)
 
     runTomcatApp(target_tomcat_path)
 
@@ -256,7 +253,7 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     return result
 
 
-def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName, java_version=""):
+def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, serverName, javaopts, java_version=""):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType)
 
@@ -309,9 +306,12 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
             global JAVA8_PATH
             os.environ["JAVA_HOME"] = JAVA8_PATH
             javapath = JAVA8_PATH + os.path.sep + "bin/java"
-    cmd = javapath + " -Djava.library.path=lib/ -Dlog.dir=./logs -server -Xms512m -Xmx512m -XX:MaxPermSize=128m " \
-                                                  "-verbose:gc -XX:+PrintGCDetails -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false " \
-                                                  "-Dcom.sun.management.jmxremote.authenticate=false -Dcom.netease.appname=napm_" + subdir + " -classpath "
+    javaOptsArray = javaopts.split(",")
+    # print(str(javaOptsArray))
+    javaopts = " ".join(javaOptsArray)
+    # print(str(javaopts))
+    cmd = javapath + " -Djava.library.path=lib/ -Dlog.dir=./logs -server " + javaopts \
+          +" -Dcom.netease.appname=napm_" + subdir + " -classpath "
 
     targetLibDir = targetAppExecuteDir + os.path.sep + "lib"
     libs = ""

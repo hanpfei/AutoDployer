@@ -25,7 +25,7 @@ SECRET_KEY = 'fg(1qvlxy4n0oi4*(kwrm$muiyk*p-*uo_%tv&eh=u*x*#*zvv'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["apm0", "apm1", "apm2", "localhost"]
+ALLOWED_HOSTS = ["apm0", "apm1", "apm2", "apm3", "localhost"]
 
 
 # Application definition
@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'AutoDeployerServer.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': "apmtest", # Or path to database file if using sqlite3.
+        'NAME': "autodeploy", # Or path to database file if using sqlite3.
         'USER': 'root',
         'PASSWORD': '123456',
         'HOST': 'apm2',  # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
