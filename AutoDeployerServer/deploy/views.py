@@ -8,7 +8,10 @@ from deploy.models import WebAppConfig
 
 import json
 import os
-from urllib.parse import unquote
+try:
+    from urllib.parse import unquote
+except ImportError:
+     from urlparse import unquote
 
 import Deployer
 
@@ -235,7 +238,9 @@ def deploy(request):
     config_name = request.GET.get('configName')
 
     nohupfile = "./nohup.out"
-    nohup_size = os.path.getsize(nohupfile)
+    nohup_size = 0
+    if os.path.isfile(nohupfile):
+        nohup_size = os.path.getsize(nohupfile)
 
     config, appType = getConfig(config_name)
 
@@ -268,9 +273,7 @@ def deploy(request):
 
     response = HttpResponse()
 
-    print("To return result: start from " + str(nohup_size))
-    fileHandle = open(nohupfile, "r")
-    fileHandle.seek(nohup_size)
+
 
     response.write('<html><head>')
 
@@ -281,11 +284,14 @@ def deploy(request):
     </style></head>
     """
     response.write(style)
+    if os.path.isfile(nohupfile):
+        print("To return result: start from " + str(nohup_size))
+        fileHandle = open(nohupfile, "r")
+        fileHandle.seek(nohup_size)
+        for line in fileHandle.readlines():
+            response.write("%s<br/>" % (str(line)))
 
-    for line in fileHandle.readlines():
-        response.write("%s<br/>" % (str(line)))
-
-    fileHandle.close()
+        fileHandle.close()
 
     response.write('</html>')
     return response

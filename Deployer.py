@@ -370,7 +370,8 @@ def killProcess(appType, submodule):
     if pid != 0:
         kill_command = "kill -9 " + pid
         os.system(kill_command)
-        os.remove(pid_file_path)
+        if os.path.isfile(pid_file_path):
+            os.remove(pid_file_path)
 
     return pid
 
