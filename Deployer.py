@@ -264,6 +264,8 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     # print(os.getcwd())
 
     targetDir = SourceCodeDownloader.downloadSourceCode(DPLOY_ROOT_PATH, repoPath, branch, version)
+    if targetDir == "" or not os.path.isdir(targetDir):
+        return result
 
     targetAppDir = targetDir + os.path.sep + subdir;
 

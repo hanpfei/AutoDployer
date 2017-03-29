@@ -47,6 +47,9 @@ def downloadSourceCode(target_dir, repo_path, branch, version):
     cwd = os.getcwd()
     os.chdir(target_dir)
 
+    if not os.path.isdir(target_dir):
+        return ""
+
     try:
         curBranch = getCurrentBranch()
 

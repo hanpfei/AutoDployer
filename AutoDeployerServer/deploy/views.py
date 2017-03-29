@@ -280,3 +280,26 @@ def restart(request):
 
         Deployer.restartService(subdir, appType)
     return HttpResponse("Success")
+
+
+def getlog(request):
+    nohupfile = "./nohup.out"
+    response = HttpResponse()
+
+    fileHandle = open(nohupfile, "r")
+
+    response.write('<html><head>')
+
+    style = """
+        <style>
+        p{ padding:1px 0}
+        /* css注释： 设置padding为上下10px */
+        </style></head>
+        """
+    response.write(style)
+
+    for line in fileHandle.readlines():
+        response.write("%s<br/>" % (str(line)))
+
+    response.write('</html>')
+    return response

@@ -25,4 +25,5 @@ urlpatterns = [
     url(r'^deploy/', views.deploy),
     url(r'^stop/', views.stop),
     url(r'^restart/', views.restart),
+    url(r'^getlog', views.getlog),
 ]
