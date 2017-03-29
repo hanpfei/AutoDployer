@@ -173,6 +173,7 @@ def deploy(request):
     except Exception as err:
         result["code"] = 500
         result["msg"] = "The config has not been existing."
+        print(err)
 
     if config:
         repoPath = config.repo_path
@@ -232,6 +233,7 @@ def stop(request):
     result["msg"] = "Successfully"
 
     config = None
+    app_type = None
     try:
         config = JavaAppConfig.objects.get(config_name=config_name)
         if config:
@@ -300,8 +302,6 @@ def getConfig(config_name):
             print(err)
 
     return config, appType
-
-
 
 
 def getlog(request):
