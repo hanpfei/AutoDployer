@@ -11,9 +11,9 @@ def executeCmd(cmd):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     result = ""
     for line in p.stdout.readlines():
-        print("  " + str(line.decode()))
+        print("  " + str(line.decode("utf-8")))
         if result == "":
-            result = str(line.decode())
+            result = str(line.decode("utf-8"))
     return result
 
 def getCurrentBranch():
