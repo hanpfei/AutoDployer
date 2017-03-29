@@ -145,6 +145,7 @@ def runTomcatApp(target_tomcat_path, java_version=""):
             global JAVA8_PATH
             os.environ["JAVA_HOME"] = JAVA8_PATH
     daemon_script_path = target_tomcat_path + os.path.sep + "bin/catalina.sh run &"
+    daemon_script_path = "nohup " + daemon_script_path
 
     cwd = os.getcwd()
     os.chdir(target_tomcat_path)
@@ -187,6 +188,15 @@ def savePid(pid_file_path, process_key):
     fileHandle.close()
 
     return pid
+
+
+def getTargetExecDir(subdir, tomcatVersion, appType):
+    targetAppExecuteDir = ""
+    if appType == "web":
+        targetAppExecuteDir = getTargetTomcatPath(subdir, tomcatVersion)
+    elif appType == "java":
+        targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
+    return  targetAppExecuteDir
 
 
 def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion):
@@ -313,6 +323,7 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     cwd = os.getcwd()
     os.chdir(targetAppExecuteDir)
     try:
+        cmd = "nohup " + cmd
         os.system(cmd)
     except Exception as err:
         print(err)

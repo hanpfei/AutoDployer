@@ -282,7 +282,31 @@ def restart(request):
     return HttpResponse("Success")
 
 
+def getConfig(config_name):
+    config = None
+    appType = ""
+    try:
+        config = JavaAppConfig.objects.get(config_name=config_name)
+    except Exception as err:
+        print(err)
+    if config:
+        appType = "java"
+    else:
+        try:
+            config = WebAppConfig.objects.get(config_name=config_name)
+            if config:
+                appType = "java"
+        except Exception as err:
+            print(err)
+
+    return config, appType
+
+
+
+
 def getlog(request):
+    config_name = request.GET.get('configName')
+
     nohupfile = "./nohup.out"
     response = HttpResponse()
 
@@ -300,6 +324,20 @@ def getlog(request):
 
     for line in fileHandle.readlines():
         response.write("%s<br/>" % (str(line)))
+
+    config, appType = getConfig(config_name)
+
+    if config:
+        subdir = config.submodule
+        appType = config.app_type
+        tomcat_verions = ""
+        if appType == "web":
+            tomcat_verions = config.tomcat_version
+        appnohup_file_path = Deployer.getTargetExecDir(subdir, tomcat_verions, appType) + os.path.sep + "nohup.out"
+        if os.path.isfile(appnohup_file_path):
+            appnohup_fileHandle = open(appnohup_file_path, "r")
+            for line in appnohup_fileHandle.readlines():
+                response.write("%s<br/>" % (str(line)))
 
     response.write('</html>')
     return response
