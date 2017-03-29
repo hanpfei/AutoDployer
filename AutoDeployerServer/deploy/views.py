@@ -204,6 +204,7 @@ def deploy(request):
 
     response = HttpResponse()
 
+    print("To return result: start from " + str(nohup_size))
     fileHandle = open(nohupfile, "r")
     fileHandle.seek(nohup_size)
 

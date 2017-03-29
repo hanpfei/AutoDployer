@@ -30,8 +30,11 @@ def printUsageAndExit():
 def constructProject(targetAppDir):
     cwd = os.getcwd()
     os.chdir(targetAppDir)
-    build_command = "ant deploy"
-    SourceCodeDownloader.executeCmd(build_command)
+    try:
+        build_command = "ant deploy"
+        SourceCodeDownloader.executeCmd(build_command)
+    except Exception as err:
+        print(err)
     os.chdir(cwd)
 
 
@@ -145,8 +148,11 @@ def runTomcatApp(target_tomcat_path, java_version=""):
 
     cwd = os.getcwd()
     os.chdir(target_tomcat_path)
-    # print(daemon_script_path)
-    os.system(daemon_script_path)
+    try:
+        # print(daemon_script_path)
+        os.system(daemon_script_path)
+    except Exception as err:
+        print(err)
     os.chdir(cwd)
 
     print("After runTomcatApp")
@@ -214,7 +220,7 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "webroot-" + subdir
 
     compressed_dir = targetAppDir + os.path.sep + "compressed"
-    if os.path.isdir(compressed_dir):
+    if not os.path.isdir(compressed_dir):
         return result
 
     if os.path.isdir(targetAppExecuteDir):
@@ -273,7 +279,7 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
     targetAppExecuteDir = DPLOY_ROOT_PATH + os.path.sep + "javaapp-" + subdir
 
     compressed_dir = targetAppDir + os.path.sep + "compressed"
-    if os.path.isdir(compressed_dir):
+    if not os.path.isdir(compressed_dir):
         return result
 
     if os.path.isdir(targetAppExecuteDir):
@@ -304,7 +310,11 @@ def deployAndRunJavaApp(repoPath, branch, subdir, version, appType, conf, server
 
     cwd = os.getcwd()
     os.chdir(targetAppExecuteDir)
-    os.system(cmd)
+    try:
+        os.system(cmd)
+    except Exception as err:
+        print(err)
+
     os.chdir(cwd)
 
     pid_file_path = targetAppExecuteDir + os.path.sep + "javaapp.pid"

@@ -47,22 +47,25 @@ def downloadSourceCode(target_dir, repo_path, branch, version):
     cwd = os.getcwd()
     os.chdir(target_dir)
 
-    curBranch = getCurrentBranch()
+    try:
+        curBranch = getCurrentBranch()
 
-    if curBranch != branch:
-        branch_cmd = GIT_PATH + " branch | grep " + branch
-        p = subprocess.Popen(branch_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        tmpbranch = p.stdout.readlines()
-        if tmpbranch:
-            checkout_cmd = GIT_PATH + " checkout " + branch
-        else:
-            checkout_cmd = GIT_PATH + " checkout -t origin/" + branch
-        print("\n" + str(checkout_cmd))
-        executeCmd(checkout_cmd)
-    if version:
-        checkout_cmd = GIT_PATH + " checkout " + version
-        print("\n" + str(checkout_cmd))
-        executeCmd(checkout_cmd)
+        if curBranch != branch:
+            branch_cmd = GIT_PATH + " branch | grep " + branch
+            p = subprocess.Popen(branch_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            tmpbranch = p.stdout.readlines()
+            if tmpbranch:
+                checkout_cmd = GIT_PATH + " checkout " + branch
+            else:
+                checkout_cmd = GIT_PATH + " checkout -t origin/" + branch
+            print("\n" + str(checkout_cmd))
+            executeCmd(checkout_cmd)
+        if version:
+            checkout_cmd = GIT_PATH + " checkout " + version
+            print("\n" + str(checkout_cmd))
+            executeCmd(checkout_cmd)
+    except Exception as err:
+        print(err)
 
     os.chdir(cwd)
     return target_dir
