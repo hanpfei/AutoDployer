@@ -96,6 +96,14 @@ def createConfig(request):
         if javaVersion:
             config.java_version = javaVersion
 
+        shutdownPort = request.GET.get('shutdownPort')
+        if shutdownPort:
+            config.shutdown_port = shutdownPort
+
+        ajpPort = request.GET.get('ajpPort')
+        if ajpPort:
+            config.ajp_port = ajpPort
+
     config.save()
 
     json_str = config.toJSON()
@@ -148,12 +156,16 @@ webapp_config_line_template = """
 <td>%s</td>
 <td>%s</td>
 <td>%s</td>
+<td>%s</td>
+<td>%s</td>
 </tr>\n
 """
 
 webapp_config_table_template = """
 <table border="1">
 <tr>
+<th>%s</th>
+<th>%s</th>
 <th>%s</th>
 <th>%s</th>
 <th>%s</th>
@@ -193,11 +205,12 @@ def list_config(request):
         for config in all_webapp_config_list:
             table_line = webapp_config_line_template % (config.config_name, config.repo_path, config.branch, config.submodule,
                                                         config.app_type, config.conf_path, config.tomcat_version, config.version,
-                                                        config.connector_port, config.redirect_port, config.java_version)
+                                                        config.connector_port, config.redirect_port, config.shutdown_port,
+                                                        config.ajp_port, config.java_version)
             table_lines = table_lines + table_line
-        table = webapp_config_table_template % ("Config name", "Repo path", "Branch", "Sub module",
-                                         "App tpye", "Conf path", "Tomcat version", "Version", "Connector port", "Redirect port",
-                                                "Java version", table_lines)
+        table = webapp_config_table_template % ("Config name", "Repo path", "Branch", "Sub module", "App tpye", "Conf path",
+                                                "Tomcat version", "Version", "Connector port", "Redirect port", "Shutdown port",
+                                                "AJP port", "Java version", table_lines)
         result_str = result_str + table
 
     if len(all_webapp_config_list) <= 0 and len(all_javaapp_config_list) <= 0:
@@ -267,9 +280,11 @@ def deploy(request):
         tomcat_version = config.tomcat_version
         connectorPort = config.connector_port
         redirectPort = config.redirect_port
+        shutdownPort = config.shutdown_port
+        ajpPort = config.ajp_port
 
         result = Deployer.deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcat_version,
-                                                connectorPort, redirectPort, javaVersion)
+                                                connectorPort, redirectPort, shutdownPort, ajpPort, javaVersion)
 
     response = HttpResponse()
 

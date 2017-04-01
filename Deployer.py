@@ -105,7 +105,7 @@ def deployTomcat(targetAppExecuteDir, appname, tomcat_version):
     return target_tomcat_path
 
 
-def configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redirectPort):
+def configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redirectPort, shutdownPort, ajpPort):
     serverXmlPath = target_tomcat_path + os.path.sep + "conf/server.xml"
 
     docBase = targetAppExecuteDir
@@ -115,6 +115,8 @@ def configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redi
     redirectPortPlaceHolder = "{RedirectPortPlaceHolder}"
     docBasePlaceHolder = "{DocBasePlaceHolder}"
     sessionCookieNamePlaceHolder = "{SessionCookieNamePlaceHolder}"
+    shutdownPortPlaceHolder = "{ShutdownPortPlaceHolder}"
+    ajpPortPlaceHolder = "{AJPPortPlaceHolder}"
 
     fileHandle = open(serverXmlPath, "r")
     serverXmlPathTmp = target_tomcat_path + os.path.sep + "conf/server.xml_tmp"
@@ -130,6 +132,8 @@ def configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redi
         line = re.sub(redirectPortPlaceHolder, redirectPort, line)
         line = re.sub(docBasePlaceHolder, docBase, line)
         line = re.sub(sessionCookieNamePlaceHolder, sessionCookieName, line)
+        line = re.sub(shutdownPortPlaceHolder, shutdownPort, line)
+        line = re.sub(ajpPortPlaceHolder, ajpPort, line)
         targetConfigFile.write(line)
 
     fileHandle.close()
@@ -197,7 +201,7 @@ def getTargetExecDir(subdir, tomcatVersion, appType):
     return  targetAppExecuteDir
 
 
-def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion, connectorPort, redirectPort, java_version=""):
+def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomcatVersion, connectorPort, redirectPort, shutdownPort, ajpPort, java_version=""):
     print(repoPath + "(repo_path)--:--(branch)" + branch + "(branch)--:--(version)" + version + "(version)--:--(subdir)" \
           + subdir + "(subdir)--:--(appType)" + appType + "(appType)--:--(conf)" + conf + "(conf)--:--(tomcatVersion)"
           + tomcatVersion + "(tomcatVersion)--:--(connectorPort)" + connectorPort + "(connectorPort)--:--(redirectPort)" + redirectPort)
@@ -241,7 +245,7 @@ def deployAndRunTomcatApp(repoPath, branch, subdir, version, appType, conf, tomc
     target_tomcat_path = deployTomcat(targetAppExecuteDir, subdir, tomcatVersion)
     print(target_tomcat_path)
 
-    configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redirectPort)
+    configTomcatApp(targetAppExecuteDir, target_tomcat_path, connectorPort, redirectPort, shutdownPort, ajpPort)
 
     runTomcatApp(target_tomcat_path)
 

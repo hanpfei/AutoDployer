@@ -29,15 +29,20 @@ AutoDployer 是一个基于 Web 的 Java/Tomcat 应用部署工具，用户可�
   * `serverName`：对于 Java 应用，必选，需要传入要运行的 Main class；对于 Tomcat 应用，无需传入。
   * `tomcatVersion`：对于 Tomcat 应用，必选，需要传入 tomcat 的版本，当前只支持 `tomcat7`；对于 Java 应用，无需传入；
   * `version`：该参数可选，当要部署 repo 的特定 revision 时指定，传入 git repo 的 commit id。
+  * `connectorPort`：该参数可选。主要用于部署 Tomcat 应用，用于指定 Tomcat 监听的端口，不指定时，采用默认的 8080。
+  * `redirectPort`：该参数可选。主要用于部署 Tomcat 应用，用于指定 Tomcat 的 redirect 端口，不指定时，采用默认的 8443。
+  * `shutdownPort`：该参数可选。主要用于部署 Tomcat 应用，用于指定 Tomcat 的 Shutdown 服务端口，不指定时，采用默认的 8005。
+  * `ajpPort`：该参数可选。主要用于部署 Tomcat 应用，用于指定 Tomcat 的 AJP 服务端口，不指定时，采用默认的 8009。
+  * `javaopts`：对于 Java app 而言，该参数必选，用于指定 JVM 参数。需要传入多个参数时，各个参数以逗号分隔，参数需经过 URL Encode。
 
 返回值：
  * 该接口会以 JSON 格式返回配置的描述。
 
 示例：
 ```
-http://apm0:7000/createConfig?configName=napm-mobilelog-consumer&repoPath=ssh://git@g.hz.netease.com:22222/napm/napm-backend.git&branch=master&subdir=napm-mobilelog-consumer&conf=conf/test&serverName=com.netease.napm.consumer.mobilelog.NapmMobileLogConsumer&appType=java
+http://localhost:7000/createConfig?configName=napm-collector&repoPath=ssh://git@g.hz.netease.com:22222/napm/napm-backend.git&branch=develop&subdir=napm-collector&appType=web&conf=conf/localDev&tomcatVersion=tomcat7&connectorPort=6080&redirectPort=6443&javaVersion=java7
 
-http://apm0:7000/createConfig?configName=napm-collector&repoPath=ssh://git@g.hz.netease.com:22222/napm/napm-backend.git&branch=master&subdir=napm-collector&appType=web&conf=conf/localDev&tomcatVersion=tomcat7
+http://localhost:7000/createConfig?configName=napm-hbase-consumer&repoPath=ssh://git@g.hz.netease.com:22222/napm/napm-backend.git&branch=develop&subdir=napm-hbase-consumer&conf=conf/test&serverName=com.netease.napm.consumer.hbase.NapmHbaseConsumer&appType=java&javaopts=-Xms512m%2c-Xmx512m%2c-XX%3aMaxPermSize%3d128m%2c-verbose%3agc%2c-XX%3a%2bPrintGCDetails%2c-Dcom.sun.management.jmxremote%2c-Dcom.sun.management.jmxremote.ssl%3dfalse%2c-Dcom.sun.management.jmxremote.authenticate%3dfalse
 ```
 
 ### 部署配置
@@ -178,4 +183,16 @@ export PYTHONPATH=$PYTHONPYTH:/Users/apm/tools/AutoDployer
 apm3:AutoDeployerServer apm$ nohup python manage.py runserver 0.0.0.0:7000 &
 ```
 
+### MySQL 配置
 
+所采用的 MySQL 配置如下：
+```
+Database: autodeploy
+Username: root
+Password: 123456
+MySql Server Host: apm2
+Port: 3306
+
+Java App Table: deploy_javaappconfig
+Tomcat App Table: deploy_webappconfig
+```

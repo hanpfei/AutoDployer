@@ -53,6 +53,8 @@ class WebAppConfig(models.Model):
     connector_port = models.CharField(max_length=32, default='8080')
     redirect_port = models.CharField(max_length=32, default='8443')
     java_version = models.CharField(max_length=32, default=JAVA7_INDENTIFIER)
+    shutdown_port = models.CharField(max_length=32, default='8005')
+    ajp_port = models.CharField(max_length=32, default='8009')
 
     def toJSON(self):
         serialized_config = {}
